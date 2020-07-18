@@ -26,9 +26,12 @@ def get_available_probes():
     url = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/GetProbes?apikey=7295deda-f359-4ac9-918f-93fdc01992a8"
 
     # check if Africa_probes_id file exists and delete it.
+    if os.path.exists("files/Africa_probe_countries.txt"):
+        os.remove("files/Africa_probe_countries.txt")
     if os.path.exists("files/Africa_probes_id.txt"):
         os.remove("files/Africa_probes_id.txt")
 
+    country_probes = {}
     # check which country has probes
     for country in african_countries:
         payload = {
@@ -55,12 +58,20 @@ def get_available_probes():
         except requests.exceptions.RequestException as e:
             return "Request FAILED"
         json_result = r.json()
-        file = open("files/Africa_probes_id.txt", "a")
+        file = open("files/Africa_probe_countries.txt", "a")
+        fil = open("files/Africa_probes_id.txt", "a")
+        if len(json_result['GetProbesResult']['Probes']) != 0:
+            country_probes.update({country.strip(): len(json_result['GetProbesResult']['Probes'])})
+            file.write(country.strip())
+            file.write('\n')
         for probes in json_result['GetProbesResult']['Probes']:
             if probes['ProbeID'] != 'NONE':
-                file.write(probes['ProbeID'])
-                file.write('\n')
+                fil.write(probes['ProbeID'])
+                fil.write('\n')
         file.close()
+        fil.close()
+    with open('files/country_and_probes.txt', 'w') as outfile:
+        json.dump(country_probes, outfile)
 
 
 """
@@ -69,10 +80,14 @@ doing a ping given a list of destination ip address
 
 
 def post_ping_all_ip_test():
-    file = open("files/Africa_probes_id.txt", 'r')
-    probe_id = file.readlines()
-    probe_id = random.sample(probe_id, len(probe_id))
-    file.close()
+    # file = open("files/Africa_probes_id.txt", 'r')
+    #file = open("files/Africa_probe_countries.txt", 'r')
+
+    # probe_id = file.readlines()
+    #countries = file.readlines()
+    # probe_id = random.sample(probe_id, len(probe_id))
+    #countries = random.sample(countries, len(countries))
+    #file.close()
     file = open("files/ip_Africa_address.txt", 'r')
     ip_address = file.readlines()
     ip_address = random.sample(ip_address, len(ip_address))
@@ -86,12 +101,23 @@ def post_ping_all_ip_test():
 
     }
     test_res = []
-    for probe in probe_id:
+    data = ""
+    with open('files/country_and_probes.txt') as json_file:
+        data = json.load(json_file)
+
+    # for probe in probe_id:
+    for x, y in data.items():
         numb_of_dest = 0
-        id = probe.strip()
+        # id = probe.strip()
+        id = x.strip()
+        test_count = 1
+        if y >= 20:
+            test_count = 10
+        else:
+            test_count = y
         for i in range(ip_start, len(ip_address)):
             ip = ip_address[i].strip()
-            if numb_of_dest > 1:
+            if numb_of_dest > 4:
                 if i == (len(ip_address) - 1):
                     ip_start = 0
                 else:
@@ -104,10 +130,11 @@ def post_ping_all_ip_test():
                     "PingType": "icmp",
                     "Count": 3,
                     "Timeout": 4000,
-                    "TestCount": 1,
+                    "TestCount": test_count,
                     "Sources": [
                         {
-                            "ProbeID": id
+                            # "ProbeID": id
+                            "CountryCode": id
 
                         }
                     ],
@@ -304,8 +331,8 @@ def get_trace_all_result():
 
 def main():
     #get_available_probes()
-    #post_ping_all_ip_test()
-    get_ping_all_result()
+    post_ping_all_ip_test()
+    # get_ping_all_result()
 
 
 if __name__ == "__main__":
