@@ -8,6 +8,7 @@ chardet==3.0.4
 chromedriver-py==83.0.4103.14
 click==7.1.2
 colorama==0.4.3
+docopt==0.6.2
 docutils==0.16
 fanstatic==1.1
 Flask==1.1.2

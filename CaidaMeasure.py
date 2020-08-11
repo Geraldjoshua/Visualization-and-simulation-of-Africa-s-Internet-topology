@@ -2,9 +2,7 @@ import requests
 import json
 import random
 import os
-import warts
 import shutil
-from warts.traceroute import Traceroute
 
 """
 get all active probes in Africa
@@ -112,7 +110,6 @@ def get_trace_all_result():
     os.mkdir("files/trace")
     file = open("files/trace_test_id.txt")
     result_id = file.readlines()
-    warts_object = []
     for id in result_id:
         params["id"] = id.strip()
         try:
@@ -134,7 +131,6 @@ def get_ping_all_result():
     params = {'key': api_key}
     file = open("files/ping_test_id.txt")
     result_id = file.readlines()
-    warts_object = []
     for id in result_id:
         params["id"] = id
         try:

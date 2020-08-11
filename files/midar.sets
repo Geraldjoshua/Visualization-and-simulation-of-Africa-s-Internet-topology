@@ -1,0 +1,78 @@
+# version: $Id: set-analysis.cc,v 1.38 2016/09/22 19:11:53 kkeys Exp $
+# version: $Id: MidarUtils.cc,v 1.153 2017/09/01 22:54:05 kkeys Exp $
+# command line: /storage/scratch/alias-res-service/midar-0.7.1/midar/set-analysis --output /storage/scratch/alias-res-service/runs/run-auto-20200810-1597067483-82/midar-analysis/midar.sets --sets /storage/scratch/alias-res-service/runs/run-auto-20200810-1597067483-82/midar-analysis/tc --overlap 5 --clockoff 100 /storage/scratch/alias-res-service/runs/data/run-auto-20200810-1597067483-82/cor1-data/local.one-src.out ; /storage/scratch/alias-res-service/runs/data/run-auto-20200810-1597067483-82/discovery-data/local.out ; /storage/scratch/alias-res-service/runs/data/run-auto-20200810-1597067483-82/elim1-data/local.one-src.out 
+#
+#     set_id:  addrs  pairs unsh>0 unsh=1 unsh=2 unsh=3    sh=0   sh=1   sh=2   sh=3
+# set      0:      4      6      0      0      0      0       0      0      0      6
+77.67.83.49
+77.67.95.253
+141.136.99.141
+213.200.119.102
+# set      1:      4      6      0      0      0      0       0      0      0      6
+193.95.96.4
+193.95.96.108
+193.95.96.110
+193.95.96.218
+# set      2:      3      3      0      0      0      0       0      0      0      3
+5.11.10.157
+5.11.10.171
+5.11.10.221
+# set      3:      3      3      0      0      0      0       0      0      0      3
+105.187.234.97
+105.187.234.102
+105.187.235.61
+# set      4:      3      3      0      0      0      0       0      0      0      3
+184.104.192.113
+184.105.222.149
+184.105.223.253
+# set      5:      3      3      0      0      0      0       0      0      0      3
+193.95.0.73
+193.95.1.191
+193.95.1.221
+# set      6:      3      3      0      0      0      0       0      0      2      1
+193.95.96.6
+193.95.96.98
+193.95.96.216
+# set      7:      2      1      0      0      0      0       0      0      0      1
+4.68.73.154
+193.251.151.18
+# set      8:      2      1      0      0      0      0       0      0      0      1
+41.160.0.244
+41.160.0.245
+# set      9:      2      1      0      0      0      0       0      0      0      1
+41.212.2.42
+105.21.160.90
+# set     10:      2      1      0      0      0      0       0      0      0      1
+77.67.83.37
+77.67.83.41
+# set     11:      2      1      0      0      0      0       0      0      0      1
+81.192.12.14
+81.192.12.18
+# set     12:      2      1      0      0      0      0       0      0      0      1
+81.192.12.30
+81.192.12.34
+# set     13:      2      1      0      0      0      0       0      0      0      1
+81.192.65.130
+81.192.65.138
+# set     14:      2      1      0      0      0      0       0      0      0      1
+105.16.22.10
+105.16.23.10
+# set     15:      2      1      0      0      0      0       0      0      0      1
+105.16.23.9
+105.21.160.89
+# set     16:      2      1      0      0      0      0       0      0      0      1
+105.16.33.254
+213.144.170.3
+# set     17:      2      1      0      0      0      0       0      0      0      1
+105.187.253.74
+105.229.0.13
+# set     18:      2      1      0      0      0      0       0      0      0      1
+169.1.2.249
+169.1.21.82
+# set     19:      2      1      0      0      0      0       0      0      0      1
+196.25.26.65
+196.25.158.241
+# set     20:      2      1      0      0      0      0       0      0      0      1
+196.202.172.53
+197.220.124.117
+# end
