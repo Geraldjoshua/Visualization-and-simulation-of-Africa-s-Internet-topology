@@ -56,22 +56,35 @@ def update_mongo_with_asn(platform):
     # This creates a Reader object. You should use the same object
     # across multiple requests as creation of it is expensive.
     pathToDb = "files/GeoLite2-ASN.mmdb"
+    pathToCityDB = "files/GeoLite2-City.mmdb"
+
     if platform == "SpeedChecker":
         with geoip2.database.Reader(pathToDb) as reader:
-            # iterate through each document's Tracert array
-            for x in collection.find():
-                for trace in x['Tracert']:
-                    ip = trace['IP']
-                    try:
-                        response = reader.asn(ip)
-                        asn = response.autonomous_system_number
-                    except:
-                        print("Address not in database")
-                        asn = ""
-                    qu = {}
-                    update = {"$set": {"Tracert.$[inner].ASN": asn}}
-                    filter = [{"inner.IP": ip}]
-                    collection.update_many(qu, update, upsert=True, array_filters=filter)
+            with geoip2.database.Reader(pathToCityDB ) as cityReader:
+                # iterate through each document's Tracert array
+                for x in collection.find():
+                    for trace in x['Tracert']:
+                        ip = trace['IP']
+                        try:
+                            response = reader.asn(ip)
+                            cityResponse = cityReader.city(ip)
+                            asn = response.autonomous_system_number
+                            city= cityResponse.city.name
+                            lat = cityResponse.location.latitude
+                            long = cityResponse.location.longitude
+                        except:
+                            print("Address not in database")
+                            asn = ""
+                            city = ""
+                            lat = ""
+                            long = ""
+                        qu = {}
+                        update = {"$set": {"Tracert.$[inner].ASN": asn,
+                                           "Tracert.$[inner].City": city,
+                                           "Tracert.$[inner].Latitude": lat,
+                                           "Tracert.$[inner].Longitude": long}}
+                        filter = [{"inner.IP": ip}]
+                        collection.update_many(qu, update, upsert=True, array_filters=filter)
     elif platform == "CAIDA":
         # havent thought about it yet
         print("not yet")
@@ -292,11 +305,11 @@ def get_asn(platform):
     return asn
 
 def main():
-    #upload_to_mongo("SpeedChecker")
+    upload_to_mongo("SpeedChecker")
     #update_mongo_with_asn("SpeedChecker")
     #update_mongo_with_alias_set("SpeedChecker")
     #get_asn_location("SpeedChecker")
-    get_linked_asn("SpeedChecker")
+    #get_linked_asn("SpeedChecker")
 
 
 if __name__ == "__main__":
