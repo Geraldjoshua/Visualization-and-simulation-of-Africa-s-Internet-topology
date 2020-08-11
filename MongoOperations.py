@@ -6,7 +6,7 @@ import csv
 import pandas as pd
 
 
-def upload_to_mongo():
+def upload_to_mongo(platform):
     # establishing connection
     try:
         connect = MongoClient('mongodb://localhost:27017/')
@@ -24,15 +24,22 @@ def upload_to_mongo():
     directory = "files/trace"
     for filename in os.listdir(directory):
         a = filename
-        with open("trace/" + a) as json_file:
+        with open("files/trace/" + a) as json_file:
             data = json.load(json_file)
-            for testResult in data["TracerouteTestResults"]:
-                collection.insert_one(testResult)
+            if platform == "SpeedChecker":
+                for testResult in data["TracerouteTestResults"]:
+                    collection.insert_one(testResult)
+            elif platform == "CAIDA":
+                # havent thought about it yet
+                continue
+            elif platform == "RIPE":
+                # think about it later
+                continue
 
     connect.close()
 
 
-def update_mongo_with_asn():
+def update_mongo_with_asn(platform):
     # establing connection
     try:
         connect = MongoClient('mongodb://localhost:27017/')
@@ -49,25 +56,34 @@ def update_mongo_with_asn():
     # This creates a Reader object. You should use the same object
     # across multiple requests as creation of it is expensive.
     pathToDb = "files/GeoLite2-ASN.mmdb"
-    with geoip2.database.Reader(pathToDb) as reader:
-        # iterate through each document's Tracert array
-        for x in collection.find():
-            for trace in x['Tracert']:
-                ip = trace['IP']
-                try:
-                    response = reader.asn(ip)
-                    asn = response.autonomous_system_number
-                except:
-                    print("Address not in database")
-                    asn = ""
-                qu = {}
-                update = {"$set": {"Tracert.$[inner].ASN": asn}}
-                filter = [{"inner.IP": ip}]
-                collection.update_many(qu, update, upsert=True, array_filters=filter)
+    if platform == "SpeedChecker":
+        with geoip2.database.Reader(pathToDb) as reader:
+            # iterate through each document's Tracert array
+            for x in collection.find():
+                for trace in x['Tracert']:
+                    ip = trace['IP']
+                    try:
+                        response = reader.asn(ip)
+                        asn = response.autonomous_system_number
+                    except:
+                        print("Address not in database")
+                        asn = ""
+                    qu = {}
+                    update = {"$set": {"Tracert.$[inner].ASN": asn}}
+                    filter = [{"inner.IP": ip}]
+                    collection.update_many(qu, update, upsert=True, array_filters=filter)
+    elif platform == "CAIDA":
+        # havent thought about it yet
+        print("not yet")
+
+    elif platform == "RIPE":
+        # think about it later
+        print("not yet")
+
     connect.close()
 
 
-def update_mongo_with_alias_set():
+def update_mongo_with_alias_set(platform):
     # establing connection
     try:
         connect = MongoClient('mongodb://localhost:27017/')
@@ -81,7 +97,7 @@ def update_mongo_with_alias_set():
     # creating or switching to demoCollection
     collection = db.traces
 
-    f = open('files/midar-83.sets', 'r')
+    f = open('files/midar.sets', 'r')
     # loop through file and discard the first 6 lines beginning with hash
     for line in f:
         if line[0:1] == '#':
@@ -96,19 +112,28 @@ def update_mongo_with_alias_set():
             lineCount += 1
         else:
             ip = line.strip()
-            qu = {}
-            update = {"$set": {"Tracert.$[inner].setNumber": lineCount}}
-            filter = [{"inner.IP": ip}]
-            collection.update_many(qu, update, upsert=True, array_filters=filter)
-            qu = {"IP": ip}
-            update = {"$set": {"setNumber": lineCount}}
-            collection.update_many(qu, update)
+            if platform == "SpeedChecker":
+                qu = {}
+                update = {"$set": {"Tracert.$[inner].setNumber": lineCount}}
+                filter = [{"inner.IP": ip}]
+                collection.update_many(qu, update, upsert=True, array_filters=filter)
+                qu = {"IP": ip}
+                update = {"$set": {"setNumber": lineCount}}
+                collection.update_many(qu, update)
+
+            elif platform == "CAIDA":
+                # havent thought about it yet
+                print("not yet")
+
+            elif platform == "RIPE":
+                # think about it later
+                print("not yet")
 
     connect.close()
-    os.remove("files/midar-83.sets")
+    #os.remove("files/midar.sets")
 
 
-def get_asn_location():
+def get_asn_location(platform):
     # establing connection
     try:
         connect = MongoClient('mongodb://localhost:27017/')
@@ -134,12 +159,20 @@ def get_asn_location():
             csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow(['IP', 'ASN', 'Longitude', 'Latitude'])
             for line in f:
-                for x in collection.find({"Tracert.ASN": int(line.strip())},
-                                         {"Tracert": {"$elemMatch": {"ASN": int(line.strip())}}}):
-                    response = reader.city(x['Tracert'][0]['IP'])
-                    csv_writer.writerow([x['Tracert'][0]['IP'], x['Tracert'][0]['ASN'], response.location.longitude,
-                                         response.location.latitude])
-                    break
+                if platform == "SpeedChecker":
+                    for x in collection.find({"Tracert.ASN": int(line.strip())},
+                                             {"Tracert": {"$elemMatch": {"ASN": int(line.strip())}}}):
+                        response = reader.city(x['Tracert'][0]['IP'])
+                        csv_writer.writerow([x['Tracert'][0]['IP'], x['Tracert'][0]['ASN'], response.location.longitude,
+                                             response.location.latitude])
+                        break
+                elif platform == "CAIDA":
+                    # havent thought about it yet
+                    print("not yet")
+
+                elif platform == "RIPE":
+                    # think about it later
+                    print("not yet")
 
     # close file
     f.close()
@@ -147,7 +180,7 @@ def get_asn_location():
     os.remove("files/uniqueAsn.txt")
 
 
-def get_linked_asn():
+def get_linked_asn(platform):
     # establing connection
     try:
         connect = MongoClient('mongodb://localhost:27017/')
@@ -160,26 +193,35 @@ def get_linked_asn():
 
     sources = []
     targets = []
-    for x in mycol.find():
-        # check if document has set attribute
-        source = x['ProbeInfo']['ASN']
+    if platform == "SpeedChecker":
+        for x in mycol.find():
+            # check if document has set attribute
+            source = x['ProbeInfo']['ASN']
 
-        # iterate through every element in the document's Tracert array checking set number
-        for a in x['Tracert']:
-            # first check if ASN=''
-            if a['ASN'] == '':
-                continue
+            # iterate through every element in the document's Tracert array checking set number
+            for a in x['Tracert']:
+                # first check if ASN=''
+                if a['ASN'] == '':
+                    continue
 
-            destination = a['ASN']
-            # keep updating the destination variable until the ASN is different from source
-            if source == destination:
-                continue
+                destination = a['ASN']
+                # keep updating the destination variable until the ASN is different from source
+                if source == destination:
+                    continue
 
-            sources.append(source)
-            targets.append(destination)
+                sources.append(source)
+                targets.append(destination)
 
-            # exchange the variables
-            source = destination
+                # exchange the variables
+                source = destination
+
+    elif platform == "CAIDA":
+        # havent thought about it yet
+        print("not yet")
+
+    elif platform == "RIPE":
+        # think about it later
+        print("not yet")
 
     df = pd.DataFrame({'Source': sources, 'Target': targets})
     df.to_csv('files/asn_source_destination.csv', index=False, encoding='utf-8')
@@ -201,7 +243,8 @@ def drop_mongo_collection():
     mycol.drop()
     connect.close()
 
-def get_asn():
+
+def get_asn(platform):
     # establing connection
     try:
         connect = MongoClient('mongodb://localhost:27017/')
@@ -213,27 +256,48 @@ def get_asn():
     mycol = mydb["traces"]
 
     asn = []
-    for x in mycol.find():
-        # check if document has set attribute
-        source = x['ProbeInfo']['ASN']
+    if platform == "SpeedChecker":
+        for x in mycol.find():
+            # check if document has set attribute
+            source = x['ProbeInfo']['ASN']
 
-        # iterate through every element in the document's Tracert array checking set number
-        for a in x['Tracert']:
-            # first check if ASN=''
-            if a['ASN'] == '':
-                continue
+            # iterate through every element in the document's Tracert array checking set number
+            for a in x['Tracert']:
+                # first check if ASN=''
+                if a['ASN'] == '':
+                    continue
 
-            destination = a['ASN']
-            # keep updating the destination variable until the ASN is different from source
-            if source == destination:
-                continue
+                destination = a['ASN']
+                # keep updating the destination variable until the ASN is different from source
+                if source == destination:
+                    continue
 
-            if source not in asn:
-                asn.append(source)
-            if destination not in asn:
-                asn.append(destination)
+                if source not in asn:
+                    asn.append(source)
+                if destination not in asn:
+                    asn.append(destination)
 
-            # exchange the variables
-            source = destination
+                # exchange the variables
+                source = destination
+
+    elif platform == "CAIDA":
+        # havent thought about it yet
+        print("not yet")
+
+    elif platform == "RIPE":
+        # think about it later
+        print("not yet")
+
     connect.close()
     return asn
+
+def main():
+    #upload_to_mongo("SpeedChecker")
+    #update_mongo_with_asn("SpeedChecker")
+    #update_mongo_with_alias_set("SpeedChecker")
+    #get_asn_location("SpeedChecker")
+    get_linked_asn("SpeedChecker")
+
+
+if __name__ == "__main__":
+    main()
