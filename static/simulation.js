@@ -1,4 +1,4 @@
-( function () {
+function () {
             var positioning = 'map'
             var margin = { top:50, left:50, right:50, bottom:50},
             height = 600 - margin.top - margin.bottom,
@@ -9,11 +9,18 @@
                 .translate([width/2,height/2])
                 .scale(150)
 
+            var svg = d3.select('body')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+
+            var map = svg.append('g')
+
             var path = d3.geoPath()
                 .projection(projection)
 
 
-
+            console.log("hey")
             var linkForce = d3.forceLink()
                 .id(function (d) { return d.Name })
                 .distance(10)
@@ -55,13 +62,12 @@
                 target = []
                 for( x of temp){
                     for(p of graph_nodes){
-                        if (p.Name == x.source) {
+                        if (p.Name == x.Source) {
                             source = [p.Long, p.Lat]
                             s1 = parseInt(p.Name)
-
                             counter += 1;
                         }
-                        if (p.Name == x.target) {
+                        if (p.Name == x.Target) {
                             target = [p.Long, p.Lat]
                             t1 = parseInt(p.Name)
                             counter += 1;
@@ -79,7 +85,7 @@
 
 
                 }
-                //console.log(graph_links)
+                console.log(graph_links)
                 var countries1 = topojson.feature(data[0], data[0].objects.countries).features
                 countries = countries1.filter(function(d) {
                 return data[1].some(function(n) {
@@ -93,13 +99,8 @@
                    .force('link')
                    .links(graph_links)
 
-                var svg = d3.select('body')
-                    .append('svg')
-                    .attr('width', width)
-                    .attr('height', height)
 
-                var map = svg.append('g')
-                    .attr('class', 'map')
+                 map.attr('class', 'map')
                     .selectAll('path')
                     .data(countries)
                     .enter().append('path')
@@ -118,6 +119,13 @@
                         d3.select(this).classed("selected",false)
                         tooltip.classed("hidden", true);
                     });
+
+                var zoom = d3.zoom()
+                      .on("zoom",function() {
+                        svg.attr("transform", d3.event.transform)
+                      });
+
+
                 //console.log(links)
                 var links = svg.append('g')
                     .attr('class', 'links')
@@ -237,9 +245,11 @@
                     }
                   });
                 }
+
+                svg.call(zoom)
             }
 
     
 
 
-})()
+}

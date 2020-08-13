@@ -2,8 +2,17 @@
 <html>
     <head>
         <meta charset="utf-8">
+          <!-- JQuery -->
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"   integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="   crossorigin="anonymous"></script>
+        <!-- Bootstrap core CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <!--ref to css-->
+
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+		<script src="https://d3js.org/topojson.v1.min.js"></script>
         <style>
         <style>
+
         #toggle {
             position: absolute;
             right: 15px; top: 15px;
@@ -40,10 +49,51 @@
     </head>
     <body>
         <!-- <div id="map"></div> -->
-        <div class="tooltip"></div>
-        <button id="toggle">Trial</button>
-        <script src="https://d3js.org/d3.v4.min.js"></script>
-		<script src="https://d3js.org/topojson.v1.min.js"></script> 
+        <div class="d-flex" id="wrapper">
+  <div class="bg-light border-right" id="sidebar-wrapper">
+    <div class="sidebar-heading">Menu</div>
+    <div class="list-group list-group-flush">
+      <button href="#" id = "addN"  onclick="openFormAN()" class="list-group-item list-group-item-action bg-light">Add Node</button>
+      <button href="#" id = "addC"  onclick="openFormAC()" class="list-group-item list-group-item-action bg-light">Add Connection</button>
+      <button href="#" id = "deleteNode"  onclick="openFormDN()" class="list-group-item list-group-item-action bg-light">Delete Node</button>
+      <button href="#" id = "deleteCon"  onclick="openFormDC()" class="list-group-item list-group-item-action bg-light">Delete Connection</button>
+
+      <button href="#" id = "importCSV" onclick = "clickImport()"  class="list-group-item list-group-item-action bg-light">Import from .csv</button>
+      <input id = "importinput" type = "file" style="display: none;"/>
+
+      <button href="#" onclick = "openFormExCSV()" id = "exportCSV" class="list-group-item list-group-item-action bg-light">Export to .csv</button>
+
+
+      <button href="#" id = "editRT" onclick = "openFormER()"  class="list-group-item list-group-item-action bg-light">Edit Routing Table</button>
+      <button href="#" id = "viewRT" onclick = "openFormVR()"  class="list-group-item list-group-item-action bg-light">View Routing Table</button>
+
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div id="page-content-wrapper">
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+      <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+        <li class="nav-item active">
+          <button class="btn btn-primary" id="menu-toggle1" >Toggle Menu</button>
+          <button class="btn btn-success" onclick="openForm()"   id="menu-toggle" >Simulation</button>
+          <button class="btn btn-danger" onclick="clearGraph()" id="clear-raph" >Clear Graph</button>
+		  <button id="toggle" >start simulation</button>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="container-fluid" id = "tooltip" >
+      <svg id = "svg1" width="1100" height="600"></svg>
+    </div>
+  </div>
+  <!-- /#page-content-wrapper -->
+
+
+
+</div>
+<!-- /#wrapper -->
         <!-- <script src="https://unpkg.com/topojson@3/dist/topojson.min.js"></script> -->
         <script>
             var positioning = 'map'
@@ -53,8 +103,17 @@
 
 
             var projection = d3.geoMercator()
-                .translate([width/2,height/2])
+                .center([0, 0 ])
                 .scale(150)
+                //.translate([width/2,height/2])
+
+            divChild = document.getElementById("svg1");
+            var svg = d3.select(divChild)
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+
+            var map = svg.append('g')
 
             var path = d3.geoPath()
                 .projection(projection)
@@ -139,13 +198,8 @@
                    .force('link')
                    .links(graph_links)
 
-                var svg = d3.select('body')
-                    .append('svg')
-                    .attr('width', width)
-                    .attr('height', height)
 
-                var map = svg.append('g')
-                    .attr('class', 'map')
+                 map.attr('class', 'map')
                     .selectAll('path')
                     .data(countries)
                     .enter().append('path')
@@ -164,6 +218,13 @@
                         d3.select(this).classed("selected",false)
                         tooltip.classed("hidden", true);
                     });
+
+                var zoom = d3.zoom()
+                      .on("zoom",function() {
+                        svg.attr("transform", d3.event.transform)
+                      });
+
+
                 //console.log(links)
                 var links = svg.append('g')
                     .attr('class', 'links')
@@ -200,6 +261,13 @@
 
                 fixed(true)
                 d3.select('#toggle').on('click', toggle)
+                //d3.select('#menu-toggle1').on('click',function(e) {
+                //        e.preventDefault();
+                //        console.log("hey")
+                //        divChild2 = document.getElementById("#wrapper");
+                //        $(divChild2).toggleClass("toggled");
+                //      });
+                 //toggle)
 
                 function fixed(immediate) {
                     graph_nodes.forEach(function (d) {
@@ -283,8 +351,20 @@
                     }
                   });
                 }
+
+                svg.call(zoom)
             }
 
 
+        </script>
+
+        <!-- Menu Toggle Script -->
+        <script>
+          divChild = document.getElementById("#menu-toggle1");
+          $(divChild).click(function(e) {
+            e.preventDefault();
+            divChild2 = document.getElementById("#wrapper");
+            $(divChild2).toggleClass("toggled");
+          });
         </script>
     </body>
