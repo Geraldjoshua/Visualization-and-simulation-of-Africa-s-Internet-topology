@@ -130,6 +130,7 @@ def get_ping_all_result():
         shutil.rmtree("files/ping")
     params = {'key': api_key}
     file = open("files/ping_test_id.txt")
+    os.mkdir("files/ping")
     result_id = file.readlines()
     for id in result_id:
         params["id"] = id
