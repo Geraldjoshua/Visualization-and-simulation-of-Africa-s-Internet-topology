@@ -9,7 +9,7 @@ import random
 """
 get all active probes in Africa
 """
-
+ApiKey = ""
 
 def get_available_probes():
     african_countries = []
@@ -22,7 +22,7 @@ def get_available_probes():
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "apikey": "7295deda-f359-4ac9-918f-93fdc01992a8"
+        "apikey": ApiKey,
     }
     url = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/GetProbes?apikey=7295deda-f359-4ac9-918f-93fdc01992a8"
 
@@ -98,7 +98,7 @@ def post_ping_all_ip_test():
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "apikey": "7295deda-f359-4ac9-918f-93fdc01992a8",
+        "apikey": ApiKey,
 
     }
     test_res = []
@@ -182,17 +182,16 @@ def get_ping_all_result():
     if os.path.exists("files/ping"):
         shutil.rmtree("files/ping")
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
-    APIKEY = "7295deda-f359-4ac9-918f-93fdc01992a8"
     os.mkdir("files/ping")
     file = open("files/ping_test_id.txt", "r")
     ping_results = file.readlines()
     for result in ping_results:
         testID = result.strip()
-        url = API_ENDPOINT + "GetPingResults?apikey=" + APIKEY + "&testID=" + testID
+        url = API_ENDPOINT + "GetPingResults?apikey=" + ApiKey + "&testID=" + testID
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "apikey": "7295deda-f359-4ac9-918f-93fdc01992a8",
+            "apikey": ApiKey,
 
         }
         try:
@@ -225,7 +224,7 @@ def post_trace_all_ip_test():
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "apikey": "7295deda-f359-4ac9-918f-93fdc01992a8",
+        "apikey": ApiKey,
 
     }
     test_res = []
@@ -318,17 +317,16 @@ def get_trace_all_result():
     if os.path.exists("files/trace"):
         shutil.rmtree("files/trace")
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
-    APIKEY = "7295deda-f359-4ac9-918f-93fdc01992a8"
     os.mkdir("files/trace")
     file = open("files/trace_test_id.txt", "r")
     trace_results = file.readlines()
     for result in trace_results:
         testID = result.strip()
-        url = API_ENDPOINT + "GetTracertResults?apikey=" + APIKEY + "&testID=" + testID
+        url = API_ENDPOINT + "GetTracertResults?apikey=" + ApiKey + "&testID=" + testID
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "apikey": "7295deda-f359-4ac9-918f-93fdc01992a8",
+            "apikey": ApiKey,
 
         }
         try:
@@ -342,13 +340,13 @@ def get_trace_all_result():
                 json.dump(res, outfile)
 
 
-def main():
-    #get_available_probes()
-    #post_ping_all_ip_test()
-    #get_ping_all_result()
-    #post_trace_all_ip_test()
-    get_trace_all_result()
+# def main():
+#     #get_available_probes()
+#     #post_ping_all_ip_test()
+#     #get_ping_all_result()
+#     #post_trace_all_ip_test()
+#     get_trace_all_result()
 
-
-if __name__ == "__main__":
-    main()
+#
+# if __name__ == "__main__":
+#     main()

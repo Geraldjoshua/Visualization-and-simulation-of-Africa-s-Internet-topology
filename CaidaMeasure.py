@@ -7,7 +7,7 @@ import shutil
 """
 get all active probes in Africa
 """
-api_key = "ef6c77cf438ca8353f5a266498f4785b"
+api_key = ""
 g_base_url = "https://vela.caida.org/api"
 g_timeout = 120  # default timeout
 
@@ -147,10 +147,10 @@ def get_ping_all_result():
                         json.dump(json.JSONDecoder().decode(v), outfile)
 
 
-def main():
-    # post_trace_all_ip_test()
-    get_trace_all_result()
-
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     # post_trace_all_ip_test()
+#     get_trace_all_result()
+#
+#
+# if __name__ == "__main__":
+#     main()

@@ -11,7 +11,9 @@ import random
 import json
 import shutil
 
-ATLAS_API_KEY = "695ba3a2-801a-4923-b17a-6c3e2eb36815"
+"note: use pygal to visualize data";
+
+ATLAS_API_KEY = ""
 
 
 def post_ping_all_ip_test():
@@ -154,10 +156,10 @@ def get_trace_all_result():
                     json.dump(a, outfile)
 
 
-def main():
-    # post_trace_all_ip_test()
-    get_trace_all_result()
-
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     # post_trace_all_ip_test()
+#     get_trace_all_result()
+#
+#
+# if __name__ == "__main__":
+#     main()
