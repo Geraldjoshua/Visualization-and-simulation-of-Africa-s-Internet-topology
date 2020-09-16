@@ -23,6 +23,7 @@ def upload_to_mongo(platform, data):
     # creating or switching to Collection
     # collection = db.Speedcheckertraces
 
+
     # directory = r'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/code/trace'
     # This creates a Reader object. You should use the same object
     # across multiple requests as creation of it is expensive.
@@ -73,6 +74,19 @@ def upload_to_mongo(platform, data):
 
     connect.close()
 
+def delete_empty_traces(platform):
+    # establishing connection
+    try:
+        connect = MongoClient('mongodb://localhost:27017/')
+        print("Connected successfully!!!")
+    except:
+        print("Could not connect to MongoDB")
+
+    # connecting or switching to the database
+    db = connect.tracerouteDB
+
+    # creating or switching to demoCollection
+    collection = db.traces
 
 def delete_empty_traces(platform):
     # establishing connection
@@ -287,6 +301,7 @@ def upload_ping_to_mongo(platform, data):
     except:
         print("Could not connect to MongoDB")
 
+
     # connecting or switching to the database
     db = connect.tracerouteDB
 
@@ -341,6 +356,7 @@ def upload_ping_to_mongo(platform, data):
                 print("hey")
 
     connect.close()
+
 
 # def main():
 #     # upload_to_mongo("SpeedChecker")
