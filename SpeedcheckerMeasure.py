@@ -1,23 +1,31 @@
-import shutil
-from js.d3 import d3
+import json
+import random
 
 import requests
-import json
-import os
-import random
+
+import MongoOperations as mo
 
 """
 get all active probes in Africa
 """
 ApiKey = ""
 
+Availableprobes = {}
+ping_test_id = []
+trace_test_id = []
+African_countries = ["DZ", "AO", "BJ", "BW", "BF", "BI", "CM", "CV", "CF", "TD", "KM", "CG", "CD", "CI", "DJ",
+                     "EG", "GQ", "ER", "ET", "GA", "GM", "GH", "GN", "GW", "KE", "LS", "LR", "LY", "MG", "MW",
+                     "ML", "MR", "MU", "YT", "MA", "MZ", "NA", "NE", "NG", "RE", "RW", "SH", "ST", "SN", "SC",
+                     "SL", "SO", "ZA", "SS", "SD", "SZ", "TZ", "TG", "TN", "UG", "EH", "ZM", "ZW"]
+
+
 def get_available_probes():
-    african_countries = []
-    file = open("files/country_list.txt", "r")
-    for country in file:
-        country = country.split()
-        african_countries.append(country[0])
-    file.close()
+    african_countries = African_countries
+    # file = open("files/country_list.txt", "r")
+    # for country in file:
+    #     country = country.split()
+    #     african_countries.append(country[0])
+    # file.close()
     african_countries = random.sample(african_countries, len(african_countries))
     headers = {
         "Accept": "application/json",
@@ -27,11 +35,12 @@ def get_available_probes():
     url = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/GetProbes?apikey=7295deda-f359-4ac9-918f-93fdc01992a8"
 
     # check if Africa_probes_id file exists and delete it.
-    if os.path.exists("files/Africa_probe_countries.txt"):
-        os.remove("files/Africa_probe_countries.txt")
-    if os.path.exists("files/Africa_probes_id.txt"):
-        os.remove("files/Africa_probes_id.txt")
+    # if os.path.exists("files/Africa_probe_countries.txt"):
+    #     os.remove("files/Africa_probe_countries.txt")
+    # if os.path.exists("files/Africa_probes_id.txt"):
+    #     os.remove("files/Africa_probes_id.txt")
 
+    global Availableprobes
     country_probes = {}
     # check which country has probes
     for country in african_countries:
@@ -59,20 +68,24 @@ def get_available_probes():
         except requests.exceptions.RequestException as e:
             return "Request FAILED"
         json_result = r.json()
-        file = open("files/Africa_probe_countries.txt", "a")
-        fil = open("files/Africa_probes_id.txt", "a")
+        # file = open("files/Africa_probe_countries.txt", "a")
+        # fil = open("files/Africa_probes_id.txt", "a")
         if len(json_result['GetProbesResult']['Probes']) != 0:
             country_probes.update({country.strip(): len(json_result['GetProbesResult']['Probes'])})
-            file.write(country.strip())
-            file.write('\n')
-        for probes in json_result['GetProbesResult']['Probes']:
-            if probes['ProbeID'] != 'NONE':
-                fil.write(probes['ProbeID'])
-                fil.write('\n')
-        file.close()
-        fil.close()
-    with open('files/country_and_probes.txt', 'w') as outfile:
-        json.dump(country_probes, outfile)
+            # file.write(country.strip())
+            # file.write('\n')
+        # for probes in json_result['GetProbesResult']['Probes']:
+        #     if probes['ProbeID'] != 'NONE':
+        #         fil.write(probes['ProbeID'])
+        #         fil.write('\n')
+        # file.close()
+        # fil.close()
+
+    #Availableprobes = country_probes
+    return country_probes
+
+    # with open('files/country_and_probes.txt', 'w') as outfile:
+    #     json.dump(country_probes, outfile)
 
 
 """
@@ -80,19 +93,21 @@ doing a ping given a list of destination ip address
 """
 
 
-def post_ping_all_ip_test():
+def post_ping_all_ip_test(ip_Africa_address):
+    data = get_available_probes()
     # file = open("files/Africa_probes_id.txt", 'r')
-    #file = open("files/Africa_probe_countries.txt", 'r')
+    # file = open("files/Africa_probe_countries.txt", 'r')
 
     # probe_id = file.readlines()
-    #countries = file.readlines()
+    # countries = file.readlines()
     # probe_id = random.sample(probe_id, len(probe_id))
-    #countries = random.sample(countries, len(countries))
-    #file.close()
-    file = open("files/ip_Africa_address.txt", 'r')
-    ip_address = file.readlines()
+    # countries = random.sample(countries, len(countries))
+    # file.close()
+    global ping_test_id
+    #file = open("files/ip_Africa_address.txt", 'r')
+    ip_address = ip_Africa_address #file.readlines()
     ip_address = random.sample(ip_address, len(ip_address))
-    file.close()
+    #file.close()
     ip_start = 0
     url = 'https://kong.speedcheckerapi.com:8443/ProbeAPIv2/StartPingTest'
     headers = {
@@ -102,9 +117,9 @@ def post_ping_all_ip_test():
 
     }
     test_res = []
-    data = ""
-    with open('files/country_and_probes.txt') as json_file:
-        data = json.load(json_file)
+
+    # with open('files/country_and_probes.txt') as json_file:
+    #     data = json.load(json_file)
 
     # for probe in probe_id:
     for x, y in data.items():
@@ -163,14 +178,7 @@ def post_ping_all_ip_test():
                 print(res)
                 print("failed")
             numb_of_dest += 1
-
-    if os.path.exists("files/ping_test_id.txt"):
-        os.remove("files/ping_test_id.txt")
-    file = open("files/ping_test_id.txt", "a")
-    for tid in test_res:
-        file.write(tid)
-        file.write('\n')
-    file.close()
+    ping_test_id = test_res
 
 
 """
@@ -179,13 +187,8 @@ returning ping results for a list of destination ip address
 
 
 def get_ping_all_result():
-    if os.path.exists("files/ping"):
-        shutil.rmtree("files/ping")
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
-    os.mkdir("files/ping")
-    file = open("files/ping_test_id.txt", "r")
-    ping_results = file.readlines()
-    for result in ping_results:
+    for result in ping_test_id:
         testID = result.strip()
         url = API_ENDPOINT + "GetPingResults?apikey=" + ApiKey + "&testID=" + testID
         headers = {
@@ -200,9 +203,10 @@ def get_ping_all_result():
             print("empty")
         res = json.loads(r.text)
         if "200" == res['ResponseStatus']['StatusCode']:
-            s = "files/ping/ping" + testID + ".txt"
-            with open(s, 'w') as outfile:
-                json.dump(res, outfile)
+            mo.upload_ping_to_mongo("SpeedChecker", res)
+            # s = "files/ping/ping" + testID + ".txt"
+            # with open(s, 'w') as outfile:
+            #     json.dump(res, outfile)
 
 
 """
@@ -210,15 +214,18 @@ doing a trace given a list of destination ip address
 """
 
 
-def post_trace_all_ip_test():
+# def post_trace_all_ip_test(ip_Africa_address):
+def post_trace_all_ip_test(ip_Africa_address):
+    data = get_available_probes()
     # file = open("files/Africa_probes_id.txt", 'r')
     # probe_id = file.readlines()
     # probe_id = random.sample(probe_id, len(probe_id))
     # file.close()
-    file = open("files/ip_Africa_address.txt", 'r')
-    ip_address = file.readlines()
+    #file = open("files/ip_Africa_address.txt", 'r')
+    #ip_address = file.readlines()
+    ip_address = ip_Africa_address
     ip_address = random.sample(ip_address, len(ip_address))
-    file.close()
+    #file.close()
     ip_start = 0
     url = 'https://kong.speedcheckerapi.com:8443/ProbeAPIv2/StartTracertTest'
     headers = {
@@ -228,14 +235,13 @@ def post_trace_all_ip_test():
 
     }
     test_res = []
-    data = ""
-    with open('files/country_and_probes.txt') as json_file:
-        data = json.load(json_file)
+    # with open('files/country_and_probes.txt') as json_file:
+    #     data = json.load(json_file)
 
-    #for probe in probe_id:
+    # for probe in probe_id:
     for x, y in data.items():
         numb_of_dest = 0
-        #id = probe.strip()
+        # id = probe.strip()
         id = x.strip()
         test_count = 1
         if y >= 10:
@@ -269,7 +275,7 @@ def post_trace_all_ip_test():
                     "TestCount": test_count,
                     "Sources": [
                         {
-                            #"ProbeID": id
+                            # "ProbeID": id
                             "CountryCode": id
 
                         }
@@ -299,13 +305,8 @@ def post_trace_all_ip_test():
                 print("failed")
             numb_of_dest += 1
 
-    if os.path.exists("files/trace_test_id.txt"):
-        os.remove("files/trace_test_id.txt")
-    file = open("files/trace_test_id.txt", "a")
-    for tid in test_res:
-        file.write(tid)
-        file.write('\n')
-    file.close()
+    global trace_test_id
+    trace_test_id = test_res
 
 
 """
@@ -314,39 +315,39 @@ returning trace results for a list of destination ip address
 
 
 def get_trace_all_result():
-    if os.path.exists("files/trace"):
-        shutil.rmtree("files/trace")
+    # if os.path.exists("files/trace"):
+    #     shutil.rmtree("files/trace")
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
-    os.mkdir("files/trace")
-    file = open("files/trace_test_id.txt", "r")
-    trace_results = file.readlines()
-    for result in trace_results:
-        testID = result.strip()
-        url = API_ENDPOINT + "GetTracertResults?apikey=" + ApiKey + "&testID=" + testID
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "apikey": ApiKey,
+    # os.mkdir("files/trace")
+    #file = open("files/trace_test_id.txt", "r")
+    #trace_results = file.readlines()
+    for result in trace_test_id:
+        if result is not None:
+            testID = result.strip()
+            url = API_ENDPOINT + "GetTracertResults?apikey=" + ApiKey + "&testID=" + testID
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "apikey": ApiKey,
 
-        }
-        try:
-            r = requests.get(url, headers=headers)
-        except requests.exceptions.RequestException as e:
-            print("empty")
-        res = json.loads(r.text)
-        if "200" == res['ResponseStatus']['StatusCode']:
-            s = "files/trace/trace" + testID + ".txt"
-            with open(s, 'w') as outfile:
-                json.dump(res, outfile)
+            }
+            try:
+                r = requests.get(url, headers=headers)
+            except requests.exceptions.RequestException as e:
+                print("empty")
+            res = json.loads(r.text)
+            if "200" == res['ResponseStatus']['StatusCode']:
+                mo.upload_to_mongo("SpeedChecker", res)
 
 
 # def main():
-#     #get_available_probes()
+#     get_available_probes()
 #     #post_ping_all_ip_test()
+#     post_trace_all_ip_test()
+#     time.sleep(2400)
 #     #get_ping_all_result()
-#     #post_trace_all_ip_test()
 #     get_trace_all_result()
-
+#
 #
 # if __name__ == "__main__":
 #     main()

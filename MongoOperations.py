@@ -1,82 +1,76 @@
 from pymongo import MongoClient
 import geoip2.database
-import json
-import os
-import csv
-import pandas as pd
+import random
+import math
+from geopy.geocoders import Nominatim
+import numpy as np
 
+geolocator = Nominatim(user_agent="city_geoloc")
+globalUniqueNodes = []
+connection = ''
 
-def upload_to_mongo(platform):
+def upload_to_mongo(platform, data):
     # establishing connection
     try:
-        connect = MongoClient('mongodb://localhost:27017/')
-        print("Connected successfully!!!")
+        connect = MongoClient(connection)
+        # print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
 
     # connecting or switching to the database
     db = connect.tracerouteDB
 
-    # creating or switching to demoCollection
-    collection = db.traces
+    # creating or switching to Collection
+    # collection = db.Speedcheckertraces
 
+
+    # directory = r'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/code/trace'
     # This creates a Reader object. You should use the same object
     # across multiple requests as creation of it is expensive.
-    pathToDb = "C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/geolite_dbs/GeoLite2-ASN_20200721/GeoLite2-ASN.mmdb"
-    pathToCityDB = "C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/geolite_dbs/GeoLite2-City_20200721/GeoLite2-City.mmdb"
-
+    pathToDb = "files/GeoLite2-ASN.mmdb"
+    path_to_db = "files/GeoLite2-City.mmdb"
     with geoip2.database.Reader(pathToDb) as reader:
-        with geoip2.database.Reader(pathToCityDB ) as cityReader:
-            # directory = r'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/code/trace'
-            directory = "files/trace"
-
-            #if the platform is SpeedChecker
+        with geoip2.database.Reader(path_to_db) as cityReader:
             if platform == "SpeedChecker":
-                for filename in os.listdir(directory+"SpeedChecker/"):
-                    a = filename
-                    with open("files/trace/SpeedChecker/" + a) as json_file:
-                        data = json.load(json_file)
-                        for testResult in data["TracerouteTestResults"]:
-                            collection.insert_one(testResult)
+                collection = db.Speedcheckertraces
+                for testResult in data["TracerouteTestResults"]:
+                    # append the City of the probe IP first
+                    ip = testResult['IP']
+                    try:
+                        cityResponse = cityReader.city(ip)
+                        city = cityResponse.city.name
+                    except:
+                        # print("Address not in database")
+                        city = ""
+                    # append the new fields to the testResult
+                    testResult.update({"City": city})
 
-            #if the platform is CAIDA
+                    # now iterate through each testResult['Tracert'] and update
+                    for tracert in testResult['Tracert']:
+
+                        ip = tracert['IP']
+                        try:
+                            response = reader.asn(ip)
+                            cityResponse = cityReader.city(ip)
+                            asn = response.autonomous_system_number
+                            city = cityResponse.city.name
+                        except:
+                            # print("Address not in database")
+                            asn = ""
+                            city = ""
+                        # append the new fields to the testResult
+                        tracert.update({"ASN": asn})
+                        tracert.update({"City": city})
+
+                    # now insert the whole updated document into mongo
+                    collection.insert_one(testResult)
             elif platform == "CAIDA":
-                # havent thought about it yet
-                continue
-
-            #if the platform is RIPE
+                # do stuff
+                print("hey")
             elif platform == "RIPE":
-                for filename in os.listdir(directory+"RIPE/"):
-                    a = filename
-                    with open("files/trace/RIPE/" + a) as json_file:
-                        data = json.load(json_file)
-                        #add this before each sequence of traceroute hop documents to indicate the start of a set of traces.
-                        source_address = { "source_address": data['src_addr'] }
-                        ripe_collection.insert_one(source_address)
 
-                        #each traceroute hop is an individual document. 
-                        for testResult in data["result"]:
-
-                            #first discard any testResult that has empty traces
-                            if testResult['result'][0]=={'x': '*'}:
-                                continue
-
-                            ip = testResult['result'][0]['from']
-
-                            try:
-                                response = reader.asn(ip)
-                                cityResponse = cityReader.city(ip)
-                                asn = response.autonomous_system_number
-                                city= cityResponse.city.name
-                            except:
-                                print("Address not in database")
-                                asn = ""
-                                city = ""
-
-                            #append the new fields to the testResult
-                            testResult.update({"ASN": asn})
-                            testResult.update({"City": city})
-                            ripe_collection.insert_one(testResult)
+                # do stuff
+                print("hey")
 
     connect.close()
 
@@ -94,155 +88,10 @@ def delete_empty_traces(platform):
     # creating or switching to demoCollection
     collection = db.traces
 
-    if platform=="SpeedChecker":
-        #delete all tracert elements with null IP
-        qu = {}
-        update = { "$pull": { "Tracert": { "IP": "" } } }
-        result = mycol.update_many(qu, update, upsert=True)
-        print("Number of documents matched and modified: ", result.matched_count, result.modified_count)
-
-    elif platform=="CAIDA":
-        #implement
-    elif platform=="RIPE":
-        #delete all hops with result[0]=={'x': '*'} 
-        delete_query = {"result.0.x": "*"}
-        result = ripe_collection.delete_many(delete_query)
-
-#add ASNs to each trace entry using the geolite database
-def update_mongo_with_asn(platform):
-    # establing connection
+def delete_empty_traces(platform):
+    # establishing connection
     try:
-        connect = MongoClient('mongodb://localhost:27017/')
-        print("Connected successfully!!!")
-    except:
-        print("Could not connect to MongoDB")
-
-    # connecting or switching to the database
-    db = connect.tracerouteDB
-
-    # creating or switching to demoCollection
-    collection = db.traces
-
-    # This creates a Reader object. You should use the same object
-    # across multiple requests as creation of it is expensive.
-    pathToDb = "files/GeoLite2-ASN.mmdb"
-    pathToCityDB = "files/GeoLite2-City.mmdb"
-
-    with geoip2.database.Reader(pathToDb) as reader:
-        with geoip2.database.Reader(pathToCityDB ) as cityReader:
-
-            #select appropriate platform
-            if platform == "SpeedChecker":
-                # iterate through each document's Tracert array
-                count = 0
-                for x in collection.find():
-
-                    #first add city to the Probe Info
-                    probeIP = x['IP']
-                    try:
-                        cityResponse = cityReader.city(probeIP)
-                        city = cityResponse.city.name
-                        lat = cityResponse.location.latitude
-                        long = cityResponse.location.longitude
-                    except:
-                        print("Address not in database")
-                        city = ""
-                        lat = ""
-                        long = ""
-                    qu = {"IP": probeIP}
-                    update = {"$set": {"City": city,
-                                       "Latitude": lat,
-                                       "Longitude": long}}
-                    collection.update_many(qu, update, upsert=True)
-
-                    #now add cities to the Tracert Ips
-                    for trace in x['Tracert']:
-                        ip = trace['IP']
-                        try:
-                            response = reader.asn(ip)
-                            cityResponse = cityReader.city(ip)
-                            asn = response.autonomous_system_number
-                            city= cityResponse.city.name
-                            lat = cityResponse.location.latitude
-                            long = cityResponse.location.longitude
-                        except:
-                            print("Address not in database")
-                            asn = ""
-                            city = ""
-                            lat = ""
-                            long = ""
-                        qu = {}
-                        update = {"$set": {"Tracert.$[inner].ASN": asn,
-                                           "Tracert.$[inner].City": city,
-                                           "Tracert.$[inner].Latitude": lat,
-                                           "Tracert.$[inner].Longitude": long}}
-                        filter = [{"inner.IP": ip}]
-                        collection.update_many(qu, update, upsert=True, array_filters=filter)
-            elif platform == "CAIDA":
-                # havent thought about it yet
-                # fetch data from 
-                print("not yet")
-
-            elif platform == "RIPE":
-                continue
-
-    connect.close()
-
-
-def update_mongo_with_alias_set(platform):
-    # establing connection
-    try:
-        connect = MongoClient('mongodb://localhost:27017/')
-        print("Connected successfully!!!")
-    except:
-        print("Could not connect to MongoDB")
-
-    # connecting or switching to the database
-    db = connect.tracerouteDB
-
-    # creating or switching to demoCollection
-    collection = db.traces
-
-    f = open('files/midar.sets', 'r')
-    # loop through file and discard the first 6 lines beginning with hash
-    for line in f:
-        if line[0:1] == '#':
-            continue
-        else:
-            break
-
-    lineCount = 0
-    ip = ""
-    for line in f:
-        if line[0:1] == '#':
-            lineCount += 1
-        else:
-            ip = line.strip()
-            if platform == "SpeedChecker":
-                qu = {}
-                update = {"$set": {"Tracert.$[inner].setNumber": lineCount}}
-                filter = [{"inner.IP": ip}]
-                collection.update_many(qu, update, upsert=True, array_filters=filter)
-                qu = {"IP": ip}
-                update = {"$set": {"setNumber": lineCount}}
-                collection.update_many(qu, update)
-
-            elif platform == "CAIDA":
-                # havent thought about it yet
-                print("not yet")
-
-            elif platform == "RIPE":
-                # think about it later
-                print("not yet")
-
-    connect.close()
-    #os.remove("files/midar.sets")
-
-
-def get_asn_location(platform):
-    # establing connection
-    try:
-        connect = MongoClient('mongodb://localhost:27017/')
+        connect = MongoClient(connection)
         # print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
@@ -250,67 +99,132 @@ def get_asn_location(platform):
     # connecting or switching to the database
     db = connect.tracerouteDB
 
-    # creating or switching to demoCollection
-    collection = db.traces
+    if platform == "SpeedChecker":
+        # creating or switching to demoCollection
+        collection = db.Speedcheckertraces
+        # delete all tracert elements with null IP
+        qu = {}
+        update = {"$pull": {"Tracert": {"IP": ""}}}
+        result = collection.update_many(qu, update, upsert=True)
+        print("Number of documents matched and modified: ", result.matched_count, result.modified_count)
 
-    # read the file with the asns and find each corresponding IP and geolocate it
-    f = open("files/uniqueAsn.txt", "r")
-    f.readline()
+    elif platform == "CAIDA":
+        # implement
+        print("not yet")
+    elif platform == "RIPE":
+        pass
+        # delete all hops with result[0]=={'x': '*'}
+        # result = ripe_collection.delete_many(delete_query)
 
-    # This creates a Reader object. You should use the same object
-    # across multiple requests as creation of it is expensive.
-    path_to_db = "files/GeoLite2-City.mmdb"
-    with geoip2.database.Reader(path_to_db) as reader:
-        with open('files/asn_lat_long.csv', mode='w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['IP', 'ASN', 'Longitude', 'Latitude'])
-            for line in f:
-                if platform == "SpeedChecker":
-                    for x in collection.find({"Tracert.ASN": int(line.strip())},
-                                             {"Tracert": {"$elemMatch": {"ASN": int(line.strip())}}}):
-                        response = reader.city(x['Tracert'][0]['IP'])
-                        csv_writer.writerow([x['Tracert'][0]['IP'], x['Tracert'][0]['ASN'], response.location.longitude,
-                                             response.location.latitude])
-                        break
-                elif platform == "CAIDA":
-                    # havent thought about it yet
-                    print("not yet")
 
-                elif platform == "RIPE":
-                    # think about it later
-                    print("not yet")
+def geolocate(city=None, country=None):
+    '''
+    Inputs city and country, or just country. Returns the lat/long coordinates of
+    either the city if possible, if not, then returns lat/long of the center of the country.
+    '''
 
-    # close file
-    f.close()
-    connect.close()
-    os.remove("files/uniqueAsn.txt")
+    # If the city exists,
+    if country is not None:
+        # Try
+        try:
+            # To geolocate the city and country
+            loc = geolocator.geocode(str(city + ',' + country))
+            # And return latitude and longitude
+            return loc.latitude, loc.longitude
+            # Otherwise
+        except:
+            # Return missing value
+            return np.nan
+            # If the city doesn't exist
+    else:
+        # Try
+        try:
+            # Geolocate the center of the country
+            loc = geolocator.geocode(city)
+            # And return latitude and longitude
+            return loc.latitude, loc.longitude
+            # Otherwise
+        except:
+            # Return missing value
+            return np.nan
+
+
+def generate_random_loc(longitude, latitude, num_points, max_radius):
+    # brute force generate random angle and random radius
+    for i in range(num_points):
+        # random angle
+        alpha = round(2 * math.pi * random.random(), 3)
+        # random radius
+        r = math.sqrt(random.uniform(0, max_radius))
+        # calculating coordinates
+        x = round(r * math.cos(alpha), 3) + longitude
+        y = round(r * math.sin(alpha), 3) + latitude
+        return x, y
+
+
+def get_asn_location(platform):
+    try:
+        connect = MongoClient(connection)
+        # print("Connected successfully!!!")
+    except:
+        print("Could not connect to MongoDB")
+    db = connect.tracerouteDB
+
+    if platform == "SpeedChecker":
+        collection = db.Speedcheckerasnlocation
+        for item in globalUniqueNodes:
+            node_name = item[0]
+            node_city = item[1]
+            city_lat, city_long = geolocate(city=node_city)
+            node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
+            my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
+                       "City": str(node_city).rstrip('\r\n')}
+            collection.insert_one(my_dict)
+    elif platform == "CAIDA":
+        # havent thought about it yet
+        print("not yet")
+
+    elif platform == "RIPE":
+        # think about it later
+        print("not yet")
 
 
 def get_linked_asn(platform):
     # establing connection
     try:
-        connect = MongoClient('mongodb://localhost:27017/')
+        connect = MongoClient(connection)
         print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
 
     mydb = connect["tracerouteDB"]
-    mycol = mydb["traces"]
+    # mycol = mydb["traces"]
 
-    sources = []
-    targets = []
     if platform == "SpeedChecker":
+        collection = mydb["Speedcheckerlinkedasn"]
+        mycol = mydb["Speedcheckertraces"]
+        sources = []
+        targets = []
+        uniqueNodes = []  # list of all unique nodes
         for x in mycol.find():
-            # check if document has set attribute
-            source = x['ProbeInfo']['ASN']
+            if len(x['Tracert']) != 0:
+                source = [x['Tracert'][0]['ASN'], x['Tracert'][0]['City']]
+            else:
+                continue
 
             # iterate through every element in the document's Tracert array checking set number
             for a in x['Tracert']:
-                # first check if ASN=''
-                if a['ASN'] == '':
+                # first check if source does not have empty ASN or City
+                if source[0] == '' or source[1] == '' or source[1] is None:
+                    source = [a['ASN'], a['City']]
                     continue
 
-                destination = a['ASN']
+                # first check if ASN='' or City=''
+                if a['ASN'] == '' or a['City'] == '' or a['City'] is None:
+                    continue
+
+                # destination is a list variable
+                destination = [a['ASN'], a['City']]
                 # keep updating the destination variable until the ASN is different from source
                 if source == destination:
                     continue
@@ -318,8 +232,21 @@ def get_linked_asn(platform):
                 sources.append(source)
                 targets.append(destination)
 
+                # to ensure first source node of iteration is not left out
+                if source not in uniqueNodes:
+                    uniqueNodes.append(source)
+
                 # exchange the variables
                 source = destination
+                # to ensure end destination nodes are not left out
+                if source not in uniqueNodes:
+                    uniqueNodes.append(source)
+        global globalUniqueNodes
+        globalUniqueNodes = uniqueNodes
+        for i in range(len(sources)):
+            my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
+                       "Target_City": targets[i][1]}
+            collection.insert_one(my_dict)
 
     elif platform == "CAIDA":
         # havent thought about it yet
@@ -329,81 +256,115 @@ def get_linked_asn(platform):
         # think about it later
         print("not yet")
 
-    df = pd.DataFrame({'Source': sources, 'Target': targets})
-    df.to_csv('files/asn_source_destination.csv', index=False, encoding='utf-8')
-    print("done and stored asn_source_destination in csv file")
+    # df = pd.DataFrame({'Source': sources, 'Target': targets})
+    # df.to_csv('files/asn_source_destination.csv', index=False, encoding='utf-8')
+    # print("done and stored asn_source_destination in csv file")
     connect.close()
 
 
 def drop_mongo_collection():
     # establing connection
     try:
-        connect = MongoClient('localhost', 27017)
-        print("Connected successfully!!!")
+        connect = MongoClient(connection)
+
+        # print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
 
     mydb = connect["tracerouteDB"]
-    mycol = mydb["traces"]
-
-    mycol.drop()
+    mycol_1 = mydb["Speedcheckertraces"]
+    mycol_2 = mydb["Caidatraces"]
+    mycol_3 = mydb["Ripetraces"]
+    mycol_4 = mydb["Caidalinkedasn"]
+    mycol_5 = mydb["Ripelinkedasn"]
+    mycol_6 = mydb["Speedcheckerlinkedasn"]
+    mycol_7 = mydb["Speedcheckerasnlocation"]
+    mycol_8 = mydb["Ripeasnlocation"]
+    mycol_9 = mydb["Caidaasnlocation"]
+    mycol_1.drop()
+    mycol_2.drop()
+    mycol_3.drop()
+    mycol_4.drop()
+    mycol_5.drop()
+    mycol_6.drop()
+    mycol_7.drop()
+    mycol_8.drop()
+    mycol_9.drop()
     connect.close()
 
 
-def get_asn(platform):
-    # establing connection
+def upload_ping_to_mongo(platform, data):
+    # establishing connection
     try:
-        connect = MongoClient('mongodb://localhost:27017/')
-        print("Connected successfully!!!")
+        connect = MongoClient(connection)
+        # print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
 
-    mydb = connect["tracerouteDB"]
-    mycol = mydb["traces"]
 
-    asn = []
-    if platform == "SpeedChecker":
-        for x in mycol.find():
-            # check if document has set attribute
-            source = x['ProbeInfo']['ASN']
+    # connecting or switching to the database
+    db = connect.tracerouteDB
 
-            # iterate through every element in the document's Tracert array checking 
-            for a in x['Tracert']:
-                # first check if ASN=''
-                if a['ASN'] == '':
-                    continue
+    # creating or switching to Collection
+    # collection = db.Speedcheckertraces
 
-                destination = a['ASN']
-                # keep updating the destination variable until the ASN is different from source
-                if source == destination:
-                    continue
+    # directory = r'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/code/trace'
+    # This creates a Reader object. You should use the same object
+    # across multiple requests as creation of it is expensive.
+    pathToDb = "files/GeoLite2-ASN.mmdb"
+    path_to_db = "files/GeoLite2-City.mmdb"
+    with geoip2.database.Reader(pathToDb) as reader:
+        with geoip2.database.Reader(path_to_db) as cityReader:
+            if platform == "SpeedChecker":
+                collection = db.Speedcheckerping
+                for testResult in data["TracerouteTestResults"]:
+                    # append the City of the probe IP first
+                    ip = testResult['IP']
+                    try:
+                        cityResponse = cityReader.city(ip)
+                        city = cityResponse.city.name
+                    except:
+                        # print("Address not in database")
+                        city = ""
+                    # append the new fields to the testResult
+                    testResult.update({"City": city})
 
-                if source not in asn:
-                    asn.append(source)
-                if destination not in asn:
-                    asn.append(destination)
+                    # now iterate through each testResult['Tracert'] and update
+                    for tracert in testResult['Tracert']:
 
-                # exchange the variables
-                source = destination
+                        ip = tracert['IP']
+                        try:
+                            response = reader.asn(ip)
+                            cityResponse = cityReader.city(ip)
+                            asn = response.autonomous_system_number
+                            city = cityResponse.city.name
+                        except:
+                            # print("Address not in database")
+                            asn = ""
+                            city = ""
+                        # append the new fields to the testResult
+                        tracert.update({"ASN": asn})
+                        tracert.update({"City": city})
 
-    elif platform == "CAIDA":
-        # havent thought about it yet
-        print("not yet")
-
-    elif platform == "RIPE":
-        # think about it later
-        print("not yet")
+                    # now insert the whole updated document into mongo
+                    collection.insert_one(testResult)
+            elif platform == "CAIDA":
+                # do stuff
+                print("hey")
+            elif platform == "RIPE":
+                # do stuff
+                print("hey")
 
     connect.close()
-    return asn
-
-def main():
-    #upload_to_mongo("SpeedChecker")
-    update_mongo_with_asn("SpeedChecker")
-    #update_mongo_with_alias_set("SpeedChecker")
-    #get_asn_location("SpeedChecker")
-    #get_linked_asn("SpeedChecker")
 
 
-if __name__ == "__main__":
-    main()
+# def main():
+#     # upload_to_mongo("SpeedChecker")
+#     # update_mongo_with_asn("SpeedChecker")
+#     # update_mongo_with_alias_set("SpeedChecker")
+#     # get_asn_location("SpeedChecker")
+#     drop_mongo_collection()
+#
+#
+# if __name__ == "__main__":
+#     main()
