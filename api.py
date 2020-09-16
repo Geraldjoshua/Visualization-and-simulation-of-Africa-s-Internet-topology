@@ -1,8 +1,6 @@
 import db
 import time
 import pandas as pd
-<<<<<<< HEAD
-=======
 import SpeedcheckerMeasure as sc
 import CaidaMeasure as cm
 import RipeMeasure as rm
@@ -11,7 +9,7 @@ import MongoOperations as mo
 from flask import jsonify, make_response
 from timeloop import Timeloop
 from datetime import timedelta
->>>>>>> 3d813d8302a8d86e03e883da29fe73b1283ac602
+
 
 from flask import Flask, render_template, request
 
@@ -57,20 +55,12 @@ tl.start(block=False)
 def index():
     return render_template("/index.html", error=False)
 
-<<<<<<< HEAD
-
-@app.route('/simulate')
-def simulate():
-    # return render_template("/index.html", error=False)
-    return render_template("/simulate.html", error=False)
-
-
 # test to insert data to the data base
 @app.route("/test")
 def test():
     db.db.collection.insert_one({"name": "John", "age": 121})
     return "Connected to the data base!"
-=======
+
 
 @app.route('/speed')
 def speed():
@@ -134,4 +124,4 @@ def fetch_measurement():
     res = make_response(jsonify({"message": "OK"}), 200)
 
     return res
->>>>>>> 3d813d8302a8d86e03e883da29fe73b1283ac602
+
