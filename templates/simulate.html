@@ -111,13 +111,7 @@
     <button onclick="simulationTraffic()" type="submit" class="btn">Start Simulation</button>
     <button type="button" class="btn cancel" onclick="closeFormSim()">Close</button>
     <div class="slidecontainer">
-      <label for="simDuration" id="simDuration"><b>Simulation Duration: 50</b></label>
-      <input type="range" min="1" max="100" value="10" class="slider" id="sliderDuration">
-      <label for="simFrequency" id="simFrequency"><b>Simulation Frequency: 50</b></label>
-      <input type="range" min="1" max="100" value="50" class="slider" id="sliderFrequency">
-
-      <label for="pathCost" id="pathCost"><b>Cost of Simulation:</b></label>
-      <label for="pathDelay" id="pathDelay"><b>Delay of Simulation:</b></label>
+        <label for="pathCost" id="pathCost"><b>Simulation Total Link Delay (RTT):</b></label>
     </div>
 
   </form>
@@ -661,6 +655,7 @@ function simulationTraffic(){
      console.log(graph);
      var b = graph.Dijkstra(loc1[2],loc2[2]);
      var index1,index;
+     document.getElementById('pathCost').innerHTML = 50
      for(index1 =0; index1<b.length; index1++){
          for(index =0; index<nodespluspos.length; index++){
               if(nodespluspos[index].nodenumber == b[index1]){
@@ -671,8 +666,15 @@ function simulationTraffic(){
 
         }
     }
+    // get the total link delay
+    var totaldelay = 0;
+    for(index1 =0; index1<lineoptions.length-1; index1++){
+     var weight =  1609.34*2*(haversine_distance(lineoptions[index1],lineoptions[index1+1]))/(300000000);
+     totaldelay = totaldelay+weight;
+    }
+    document.getElementById('pathCost').innerHTML = "Simulation Total Link Delay (RTT): "+ parseFloat((totaldelay*1000).toFixed(4)) + "  Milliseconds";
     console.log(lineoptions);
-    var arr = ["#008000","#0000A0","#FFFF00","#00FFFF"];
+    var arr = ["#008000","#0000A0","#33FF46","#4D3DC1","#A31CFB"];
      var flightPath = new google.maps.Polyline({
                 path: lineoptions,
                 geodesic: true,
@@ -742,7 +744,7 @@ function addgraphNodes(asnnodes,asnlinks){
 
        }
        if(checkNodenumber(nodespluspos,sourcenodenumber)&& checkNodenumber(nodespluspos,targetnodenumber)){
-              var weight = haversine_distance(sourcelocation,targetlocation);
+              var weight =  1609.34*2*(haversine_distance(sourcelocation,targetlocation))/(300000000);
               //console.log(sourcenodenumber); //console.log(targetnodenumber);
               graph.addEdge(sourcenodenumber,targetnodenumber,weight);
          }
