@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <!-- JQuery -->
+    <script crossorigin="anonymous"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <!-- Bootstrap core CSS -->
+    <link crossorigin="anonymous" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" rel="stylesheet">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="//maps.googleapis.com/maps/api/js?key=AIzaSyAdUAqT9PRkg6x1mswnL-USnLjpgqDLxaA&callback"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+      #svg1 {
+      width: 1100;
+      height: 600;
+      margin: 0;
+      padding: 0;
+      }
+      .stations, .stations svg {
+      position: absolute;
+      }
+      .stations line {
+      position: relative;
+      stroke: black;
+      stroke-width: 2px;
+      }
+      .links {
+      //width: 100%;
+      //height: 100%;
+      position: relative;
+      }
+      .stations circle {
+      fill: brown;
+      stroke: black;
+      stroke-width: 1.5px;
+      }
+      .stations svg {
+      width: 1000px;
+      height: 1500px;
+      padding-right: 100px;
+      font: 10px sans-serif;
+      }
+      #toggle {
+      position: absolute;
+      right: 15px; top: 15px;
+      z-index: 100;
+      }
+      .map path {
+      fill: #eee;
+      stroke: #fff;
+      stroke-width: 2;
+      }
+      .container-fluid {
+      overflow: hidden;
+      }
+      .links line {
+      stroke: red;
+      stroke-opacity: 0.25;
+      }
+      .nodes circle {
+      fill: #679;
+      stroke: #235;
+      stroke-width: 1.5;
+      }
+      div.tooltip {
+      color: #222;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow: 0px 0px 2px 0px #a6a6a6;
+      padding: .2em;
+      text-shadow: #f5f5f5 0 1px 0;
+      opacity: 0.9;
+      position: fixed;
+      }
+      .background {
+      fill: none;
+      pointer-events: all;
+      }
+      #states {
+      fill: #aaa;
+      }
+      #state-borders {
+      fill: none;
+      stroke: #000;
+      stroke-width: 1.5px;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      pointer-events: none;
+      }
+    </style>
+</head>
+<body>
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                <li class="nav-item active">
+                    <label for="platforms">platform chosen: RIPEAtlas</label>
+                    <div class="btn-group" id="platforms">
+                      <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        choose platforms
+                      </button>
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="speed">Speedchecker</a>
+                        <a class="dropdown-item" href="ripe">RIPE</a>
+                        <a class="dropdown-item" href="caida">CAIDA</a>
+                      </div>
+                    </div>
+                    <div class="btn-group">
+                        <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
+                    </div>
+
+
+                </li>
+            </ul>
+        </nav>
+        <div class="container-fluid" id="tooltip">
+            <div id="map" style="width:100%;height:500px;"></div>
+        </div>
+    </div>
+    <!-- /#page-content-wrapper -->
+</div>
+<script>
+
+    // Create the Google Map…
+
+    var nodes = [];
+    var links = [];
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 3,
+        center: new google.maps.LatLng(34.5085, 8.7832),
+        //mapTypeId: google.maps.MapTypeId.TERRAIN
+    });
+
+    // Load the station data. When the data comes back, create an overlay.
+    d3.queue()
+        .defer(d3.csv,"static/asn_loc.csv")
+        .defer(d3.csv, "static/asn_links.csv")
+        .await(ready)
+
+    function ready(error, data,datalinks) {
+        if (error) throw error;
+        draw(data,datalinks);
+
+    }
+
+
+    var k;
+
+    var nodes_red = [] //Nodes Array
+
+    function draw(data,datalinks) {
+          var b;
+          for(b =0; b<data.length; b++){
+                var lat= data[b].Latitude;
+                var long= data[b].Longitude;
+                var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
+                nodes[b] = latLng;
+                var  asnnumber = data[b].ASN;
+                var newnode = new Node(asnnumber,latLng);
+                nodes_red.push(newnode);
+                var marker = new google.maps.Marker({
+                position: latLng,
+                sName: data[b].ASN,
+                map: map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 2.5,
+                    fillColor: "#F00",
+                    fillOpacity: 0.4,
+                    strokeWeight: 0.4
+                },
+            });
+          }
+          var p;
+          for(p=0; p<datalinks.length; p++){
+               var source; var target; var j;
+
+               for(j=0; j<nodes_red.length;j++){
+                    if(datalinks[p].Source == nodes_red[j].asn_number){
+                      source = nodes_red[j].pos;
+                    }
+
+                    if(datalinks[p].Target == nodes_red[j].asn_number){
+                      target = nodes_red[j].pos;
+                    }
+
+               }
+
+                var flightPlanCoordinates = [
+                    source,target
+                  ];
+                  var flightPath = new google.maps.Polyline({
+                    path: flightPlanCoordinates,
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 1
+                  });
+
+                  flightPath.setMap(map);
+          }
+
+
+    }
+
+    function animateCircle(line) {
+        var count = 0;
+        window.setInterval(function() {
+          count = (count + 1) % 200;
+
+          var icons = line.get('icons');
+          icons[0].offset = (count / 2) + '%';
+          line.set('icons', icons);
+        }, 20);
+    }
+
+    class Node {
+        constructor(asn_number, pos) {
+            this.asn_number = asn_number;
+            this.pos = pos;
+        }
+    }
+
+    class Link {
+        constructor(node1, node2) {
+            this.source = node1;
+            this.target = node2;
+        }
+    }
+
+</script>
+</body>
