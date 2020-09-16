@@ -12,7 +12,11 @@
     <script src="//maps.googleapis.com/maps/api/js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <style>
       #svg1 {
       width: 1100;
@@ -100,13 +104,22 @@
         <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
             <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                 <li class="nav-item active">
-                    <label for="platforms">Choose a measurement platform(default:speedchecker):</label>
-                    <select id="platforms">
-                      <option value="SpeedChecker" selected>Speedchecker</option>
-                      <option value="CAIDA">CAIDA</option>
-                      <option value="RIPE">RIPE</option>
-                    </select>
-                    <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
+                    <label for="platforms">platform chosen: speedchecker</label>
+                    <div class="btn-group" id="platforms">
+                      <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        choose platforms
+                      </button>
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="speed">Speedchecker</a>
+                        <a class="dropdown-item" href="ripe">RIPE</a>
+                        <a class="dropdown-item" href="caida">CAIDA</a>
+                      </div>
+                    </div>
+                    <div class="btn-group">
+                        <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
+                    </div>
+
+
                 </li>
             </ul>
         </nav>
@@ -224,76 +237,75 @@
             this.target = node2;
         }
     }
+<!--    var myVar = setInterval(myTimer, 10800000);-->
+<!--    var selplatform;-->
+<!--    function myTimer() {-->
+<!--      var platform = document.getElementById("platforms");-->
+<!--      var selectedplatform = platform.options[platform.selectedIndex].value;-->
+<!--      selplatform = selectedplatform-->
 
-    var myVar = setInterval(myTimer, 10800000);
-    var selplatform;
-    function myTimer() {
-      var platform = document.getElementById("platforms");
-      var selectedplatform = platform.options[platform.selectedIndex].value;
-      selplatform = selectedplatform
+<!--      var entry = {-->
+<!--        platforms: selectedplatform-->
 
-      var entry = {
-        platforms: selectedplatform
+<!--      };-->
 
-      };
+<!--        fetch(`${window.origin}/create-measurement`, {-->
+<!--            method: "POST",-->
+<!--            credentials: "include",-->
+<!--            body: JSON.stringify(entry),-->
+<!--            cache: "no-cache",-->
+<!--            headers: new Headers({-->
+<!--              "content-type": "application/json"-->
+<!--            })-->
+<!--          })-->
+<!--          .then(function(response) {-->
+<!--            if (response.status !== 200) {-->
+<!--              console.log(`Looks like there was a problem. Status code: ${response.status}`);-->
+<!--              return;-->
+<!--            }-->
+<!--            response.json().then(function(data) {-->
+<!--              console.log(data);-->
+<!--            });-->
+<!--          })-->
+<!--          .catch(function(error) {-->
+<!--            console.log("Fetch error: " + error);-->
+<!--        });-->
 
-        fetch(`${window.origin}/create-measurement`, {
-            method: "POST",
-            credentials: "include",
-            body: JSON.stringify(entry),
-            cache: "no-cache",
-            headers: new Headers({
-              "content-type": "application/json"
-            })
-          })
-          .then(function(response) {
-            if (response.status !== 200) {
-              console.log(`Looks like there was a problem. Status code: ${response.status}`);
-              return;
-            }
-            response.json().then(function(data) {
-              console.log(data);
-            });
-          })
-          .catch(function(error) {
-            console.log("Fetch error: " + error);
-        });
-
-      //console.log(selectedplatform);
-    }
-
-
-    var fetchVar = setInterval(fetchTimer, 13200000);
-    function fetchTimer() {
-        var entry = {
-        platforms: selplatform
-
-        };
-
-        fetch(`${window.origin}/fetch-measurement`, {
-            method: "POST",
-            credentials: "include",
-            body: JSON.stringify(entry),
-            cache: "no-cache",
-            headers: new Headers({
-              "content-type": "application/json"
-            })
-          })
-          .then(function(response) {
-            if (response.status !== 200) {
-              console.log(`Looks like there was a problem. Status code: ${response.status}`);
-              return;
-            }
-            response.json().then(function(data) {
-              console.log(data);
-            });
-          })
-          .catch(function(error) {
-            console.log("Fetch error: " + error);
-        });
+<!--      //console.log(selectedplatform);-->
+<!--    }-->
 
 
-    }
+<!--    var fetchVar = setInterval(fetchTimer, 13200000);-->
+<!--    function fetchTimer() {-->
+<!--        var entry = {-->
+<!--        platforms: selplatform-->
+
+<!--        };-->
+
+<!--        fetch(`${window.origin}/fetch-measurement`, {-->
+<!--            method: "POST",-->
+<!--            credentials: "include",-->
+<!--            body: JSON.stringify(entry),-->
+<!--            cache: "no-cache",-->
+<!--            headers: new Headers({-->
+<!--              "content-type": "application/json"-->
+<!--            })-->
+<!--          })-->
+<!--          .then(function(response) {-->
+<!--            if (response.status !== 200) {-->
+<!--              console.log(`Looks like there was a problem. Status code: ${response.status}`);-->
+<!--              return;-->
+<!--            }-->
+<!--            response.json().then(function(data) {-->
+<!--              console.log(data);-->
+<!--            });-->
+<!--          })-->
+<!--          .catch(function(error) {-->
+<!--            console.log("Fetch error: " + error);-->
+<!--        });-->
+<!--      //console.log(selplatform)-->
+
+<!--    }-->
 
 
 </script>
