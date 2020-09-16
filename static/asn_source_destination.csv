@@ -1,0 +1,104 @@
+Source_ASN,Source_City,Target_ASN,Target_City,Avg_RTT
+8452,Bani Suwayf,15399,Nairobi,450.0
+8452,Cairo,15399,Nairobi,266.67
+8452,Giza,15399,Nairobi,307.0
+8452,Zagazig,15399,Nairobi,270.33
+8452,Cairo,15399,Nairobi,253.67
+15399,Dar es Salaam,15399,Nairobi,12.67
+36937,Nelspruit,36937,Johannesburg,28.33
+36937,Johannesburg,30844,Pretoria,28.67
+30844,Pretoria,30844,Mokopane,31.33
+30844,Mokopane,37358,Pretoria,36.33
+328036,Trichardt,37358,Pretoria,39.67
+37611,Cape Town,37611,Durban,27.67
+37611,Durban,37611,Johannesburg,75.0
+37611,Johannesburg,37358,Pretoria,134.67
+37611,Pretoria,37611,Johannesburg,16.67
+37611,Johannesburg,37358,Pretoria,18.33
+5713,Virginia,37100,Cape Town,0.0
+37100,Cape Town,37100,Dar es Salaam,70.67
+37611,Durban,37611,Johannesburg,5.67
+37611,Johannesburg,5713,George,6.67
+37662,Trichardt,37100,Johannesburg,0.0
+37100,Johannesburg,37100,Dar es Salaam,81.33
+37100,Johannesburg,37100,Dar es Salaam,76.0
+2905,Johannesburg,37100,Johannesburg,0.0
+37100,Johannesburg,37100,Dar es Salaam,90.33
+37457,Pretoria,37100,Johannesburg,0.0
+37100,Johannesburg,37100,Dar es Salaam,106.67
+10474,Cape Town,37100,Dar es Salaam,103.67
+37611,Cape Town,37611,Johannesburg,161.67
+37611,Johannesburg,5713,Stellenbosch,94.67
+5713,Stellenbosch,37100,Cape Town,0.0
+37100,Cape Town,37100,Dar es Salaam,275.33
+36903,Casablanca,6713,Meknes,31.67
+6713,Meknes,6713,Kenitra,34.67
+36903,Safi,6713,Meknes,15.33
+6713,Meknes,6713,Kenitra,23.0
+36903,Rabat,6713,Meknes,42.67
+6713,Meknes,6713,Kenitra,67.33
+36903,Sal?,6713,Meknes,85.0
+6713,Meknes,6713,Kenitra,283.33
+36903,Marrakesh,6713,Meknes,17.67
+6713,Meknes,6713,Kenitra,18.0
+36903,Saidia,6713,Meknes,59.0
+6713,Meknes,6713,Kenitra,63.33
+6713,Kenitra,174,Marchena,85.67
+36903,Casablanca,6713,Meknes,11.33
+6713,Meknes,6713,Kenitra,13.33
+36903,Casablanca,6713,Meknes,42.0
+6713,Meknes,6713,Kenitra,102.0
+36903,Rabat,6713,Meknes,46.0
+6713,Meknes,6713,Kenitra,47.0
+37100,Johannesburg,37100,Mombasa,83.67
+37100,Mombasa,37061,Nairobi,91.0
+15399,Dar es Salaam,15399,Nairobi,7.33
+15399,Nairobi,4809,Nairobi,20.0
+8452,Cairo,37100,Marseille,0.0
+37100,Marseille,37100,Johannesburg,223.0
+37100,Johannesburg,327782,Johannesburg,255.0
+8452,Al Mansurah,37100,Marseille,0.0
+37100,Marseille,37100,Johannesburg,225.33
+37100,Johannesburg,327782,Johannesburg,224.0
+8452,Al Mansurah,37100,Marseille,0.0
+37100,Marseille,37100,Johannesburg,236.33
+37100,Johannesburg,327782,Johannesburg,225.0
+8452,Giza,37100,Marseille,0.0
+37100,Marseille,37100,Johannesburg,236.0
+37100,Johannesburg,327782,Johannesburg,225.33
+37100,Marseille,37100,Johannesburg,278.0
+37100,Johannesburg,327782,Johannesburg,228.0
+3356,Colombes,7018,Eastpointe,0.0
+37693,Sfax,3356,Prague,70.0
+15399,Dar es Salaam,15399,Nairobi,9.0
+15399,Nairobi,37100,Dar es Salaam,13.0
+37100,Dar es Salaam,37100,Cape Town,88.67
+37100,Cape Town,37468,Luanda,116.33
+37468,Luanda,11259,Cabinda,119.0
+37100,Johannesburg,37100,Dar es Salaam,95.67
+44356,London,37076,Lagos,359.0
+37076,Lagos,37282,Lagos,375.67
+37100,Cape Town,37282,Lagos,316.67
+2905,Johannesburg,44356,London,316.0
+44356,London,37076,Lagos,312.0
+37076,Lagos,37282,Lagos,357.33
+37611,Durban,37611,Johannesburg,16.33
+37611,Pretoria,37611,Johannesburg,54.67
+37611,Johannesburg,37611,Durban,24.0
+37611,Durban,37611,Johannesburg,47.0
+36937,Nelspruit,36937,Johannesburg,42.67
+36937,Johannesburg,30844,Pretoria,42.67
+30844,Pretoria,30844,Mokopane,34.67
+30844,Mokopane,37282,Lagos,328.33
+44356,London,37076,Lagos,319.67
+37076,Lagos,37282,Lagos,280.33
+37611,Cape Town,37611,Johannesburg,86.33
+37611,Johannesburg,44356,London,152.33
+44356,London,37076,Lagos,376.67
+37076,Lagos,37282,Lagos,1204.67
+44356,London,37076,Lagos,264.0
+37076,Lagos,37282,Lagos,258.0
+15399,Dar es Salaam,15399,Nairobi,12.33
+15399,Nairobi,37100,Dar es Salaam,6.33
+37100,Dar es Salaam,37100,Marseille,124.0
+37100,Marseille,24835,Alexandria,192.33
