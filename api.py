@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 from flask import Flask, render_template, request
 from flask import jsonify, make_response
 from timeloop import Timeloop
@@ -57,6 +56,12 @@ def index():
     data = mo.get_topology_data("SpeedChecker")
     #data = [[{"key":2,"p":5}],[{"tes":4,"les":5}]]
     return render_template("/index.html", error=False,data=data)
+
+# test to insert data to the data base
+@app.route("/test")
+def test():
+    db.db.collection.insert_one({"name": "John", "age": 121})
+    return "Connected to the data base!"
 
 
 @app.route('/speed')
@@ -127,3 +132,4 @@ def fetch_measurement():
     res = make_response(jsonify({"message": "OK"}), 200)
 
     return res
+
