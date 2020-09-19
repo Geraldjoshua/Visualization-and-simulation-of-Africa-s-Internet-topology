@@ -10,7 +10,7 @@ import IpFetcher as ip
 """
 get all active probes in Africa
 """
-ApiKey = "7295deda-f359-4ac9-918f-93fdc01992a8"
+ApiKey = ""
 
 Availableprobes = {}
 ping_test_id = []
