@@ -1,14 +1,16 @@
 import json
 import random
+import time
 
 import requests
 
 import MongoOperations as mo
+import IpFetcher as ip
 
 """
 get all active probes in Africa
 """
-ApiKey = ""
+ApiKey = "7295deda-f359-4ac9-918f-93fdc01992a8"
 
 Availableprobes = {}
 ping_test_id = []
@@ -21,11 +23,6 @@ African_countries = ["DZ", "AO", "BJ", "BW", "BF", "BI", "CM", "CV", "CF", "TD",
 
 def get_available_probes():
     african_countries = African_countries
-    # file = open("files/country_list.txt", "r")
-    # for country in file:
-    #     country = country.split()
-    #     african_countries.append(country[0])
-    # file.close()
     african_countries = random.sample(african_countries, len(african_countries))
     headers = {
         "Accept": "application/json",
@@ -34,11 +31,6 @@ def get_available_probes():
     }
     url = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/GetProbes?apikey=7295deda-f359-4ac9-918f-93fdc01992a8"
 
-    # check if Africa_probes_id file exists and delete it.
-    # if os.path.exists("files/Africa_probe_countries.txt"):
-    #     os.remove("files/Africa_probe_countries.txt")
-    # if os.path.exists("files/Africa_probes_id.txt"):
-    #     os.remove("files/Africa_probes_id.txt")
 
     global Availableprobes
     country_probes = {}
@@ -68,24 +60,10 @@ def get_available_probes():
         except requests.exceptions.RequestException as e:
             return "Request FAILED"
         json_result = r.json()
-        # file = open("files/Africa_probe_countries.txt", "a")
-        # fil = open("files/Africa_probes_id.txt", "a")
         if len(json_result['GetProbesResult']['Probes']) != 0:
             country_probes.update({country.strip(): len(json_result['GetProbesResult']['Probes'])})
-            # file.write(country.strip())
-            # file.write('\n')
-        # for probes in json_result['GetProbesResult']['Probes']:
-        #     if probes['ProbeID'] != 'NONE':
-        #         fil.write(probes['ProbeID'])
-        #         fil.write('\n')
-        # file.close()
-        # fil.close()
 
-    #Availableprobes = country_probes
     return country_probes
-
-    # with open('files/country_and_probes.txt', 'w') as outfile:
-    #     json.dump(country_probes, outfile)
 
 
 """
@@ -95,19 +73,9 @@ doing a ping given a list of destination ip address
 
 def post_ping_all_ip_test(ip_Africa_address):
     data = get_available_probes()
-    # file = open("files/Africa_probes_id.txt", 'r')
-    # file = open("files/Africa_probe_countries.txt", 'r')
-
-    # probe_id = file.readlines()
-    # countries = file.readlines()
-    # probe_id = random.sample(probe_id, len(probe_id))
-    # countries = random.sample(countries, len(countries))
-    # file.close()
     global ping_test_id
-    #file = open("files/ip_Africa_address.txt", 'r')
-    ip_address = ip_Africa_address #file.readlines()
+    ip_address = ip_Africa_address
     ip_address = random.sample(ip_address, len(ip_address))
-    #file.close()
     ip_start = 0
     url = 'https://kong.speedcheckerapi.com:8443/ProbeAPIv2/StartPingTest'
     headers = {
@@ -132,7 +100,7 @@ def post_ping_all_ip_test(ip_Africa_address):
         else:
             test_count = y
         for i in range(ip_start, len(ip_address)):
-            ip = ip_address[i].strip()
+            ip = str(ip_address[i]).strip()
             if numb_of_dest > 1:
                 if i == (len(ip_address) - 1):
                     ip_start = 0
@@ -249,7 +217,7 @@ def post_trace_all_ip_test(ip_Africa_address):
         else:
             test_count = y
         for i in range(ip_start, len(ip_address)):
-            ip = ip_address[i].strip()
+            ip = str(ip_address[i]).strip()
             if numb_of_dest > 3:
                 if i == (len(ip_address) - 1):
                     ip_start = 0
@@ -341,12 +309,13 @@ def get_trace_all_result():
 
 
 # def main():
+#     ip.scrape_africa_asn()
+#     ip_Africa_address = ip.get_random_africa_ip()
 #     get_available_probes()
-#     #post_ping_all_ip_test()
-#     post_trace_all_ip_test()
+#     post_trace_all_ip_test(ip_Africa_address)
 #     time.sleep(2400)
-#     #get_ping_all_result()
 #     get_trace_all_result()
+#     mo.delete_empty_traces("SpeedChecker")
 #
 #
 # if __name__ == "__main__":

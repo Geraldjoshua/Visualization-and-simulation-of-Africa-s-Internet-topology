@@ -8,7 +8,7 @@ import MongoOperations as mo
 """
 get all active probes in Africa
 """
-api_key = ""
+api_key = "ef6c77cf438ca8353f5a266498f4785b"
 g_base_url = "https://vela.caida.org/api"
 g_timeout = 120  # default timeout
 ping_test_id = []
@@ -52,7 +52,7 @@ def post_trace_all_ip_test(ip_Africa_Address):
             if i == (ip_start + 10):
                 ip_start = i
                 break
-            params["destination"] = ip_address[i]
+            params["destination"] = str(ip_address[i])
             params["vp"] = probe
             try:
                 r = requests.post(g_base_url + "/create", params=params, timeout=g_timeout)
@@ -88,7 +88,7 @@ def post_ping_all_ip_test(ip_Africa_Address):
             if i == (ip_start + 10):
                 ip_start = i
                 break
-            params["destination"] = ip_address[i]
+            params["destination"] = str(ip_address[i])
             params["vp"] = probe
             try:
                 r = requests.post(g_base_url + "/create", params=params, timeout=g_timeout)

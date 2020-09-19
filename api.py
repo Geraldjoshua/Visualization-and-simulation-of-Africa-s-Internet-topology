@@ -1,17 +1,13 @@
-import db
-import time
-import pandas as pd
-import SpeedcheckerMeasure as sc
-import CaidaMeasure as cm
-import RipeMeasure as rm
-import IpFetcher as ipf
-import MongoOperations as mo
+from datetime import timedelta
+from flask import Flask, render_template, request
 from flask import jsonify, make_response
 from timeloop import Timeloop
-from datetime import timedelta
 
-
-from flask import Flask, render_template, request
+import CaidaMeasure as cm
+import IpFetcher as ipf
+import MongoOperations as mo
+import RipeMeasure as rm
+import SpeedcheckerMeasure as sc
 
 app = Flask(__name__)
 ip_Africa_address = []
@@ -37,11 +33,14 @@ def sample_job_every_3hours_40_min():
         sc.get_trace_all_result()
         rm.get_trace_all_result()
         cm.get_trace_all_result()
+        mo.delete_empty_traces("SpeedChecker")
+        mo.delete_empty_traces("CAIDA")
+        mo.delete_empty_traces("RIPE")
         # print("5s job current time : {}".format(time.ctime()))
 
 
 @tl.job(interval=timedelta(seconds=86400))  # get new ipaddresses every after 24 hours
-def sample_job_every_10s():
+def sample_job_every_24hours():
     global ip_Africa_address
     ipf.scrape_africa_asn()
     ip_Africa_address = ipf.get_random_africa_ip()
@@ -53,7 +52,10 @@ tl.start(block=False)
 
 @app.route('/')
 def index():
-    return render_template("/index.html", error=False)
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("SpeedChecker")
+    #data = [[{"key":2,"p":5}],[{"tes":4,"les":5}]]
+    return render_template("/index.html", error=False,data=data)
 
 # test to insert data to the data base
 @app.route("/test")
@@ -64,22 +66,30 @@ def test():
 
 @app.route('/speed')
 def speed():
-    return render_template("/index.html", error=False)
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("SpeedChecker")
+    return render_template("/index.html", error=False,data=data)
 
 
 @app.route('/caida')
 def caida():
-    return render_template("/caida.html", error=False)
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("SpeedChecker")
+    return render_template("/caida.html", error=False,data=data)
 
 
 @app.route('/ripe')
 def ripe():
-    return render_template("/Ripe.html", error=False)
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("SpeedChecker")
+    return render_template("/Ripe.html", error=False,data=data)
 
 
 @app.route("/simulate")
 def simulate():
-    return render_template("/simulate.html", error=False)
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("SpeedChecker")
+    return render_template("/simulate.html", error=False,data=data)
 
 
 @app.route("/get-ipAddresses", methods=["POST"])
@@ -96,7 +106,6 @@ def get_ip_addresses():
 @app.route("/create-measurement", methods=["POST"])
 def create_measurement():
     req = request.get_json()
-    platform = str(req['platforms']).strip()
     # if platform == "SpeedChecker":
     sc.post_trace_all_ip_test(ip_Africa_address)
     # elif platform == "RIPE":
@@ -113,7 +122,6 @@ def create_measurement():
 @app.route("/fetch-measurement", methods=["POST"])
 def fetch_measurement():
     req = request.get_json()
-    platform = str(req['platforms']).strip()
     # if platform == "SpeedChecker":
     # sc.get_trace_all_result()
     # elif platform == "RIPE":
