@@ -5,6 +5,10 @@ from ipaddress import IPv4Network
 from bs4 import BeautifulSoup
 from chromedriver_py import binary_path  # this will get you the path variable
 from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions
 import random
 import pyasn
 
@@ -13,10 +17,10 @@ Africa_asn = []
 
 def scrape_africa_asn():
     global Africa_asn
-    # set the path to configure webdriver to use chrome browser
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(executable_path=binary_path, chrome_options=chrome_options)
+    # driver = webdriver.Chrome(ChromeDriverManager().install())
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=chrome_options)
 
     country = ["DZ", "AO", "BJ", "BW", "BF", "BI", "CM", "CV", "CF", "TD", "KM", "CG", "CD", "CI", "DJ",
                "EG", "GQ", "ER", "ET", "GA", "GM", "GH", "GN", "GW", "KE", "LS", "LR", "LY", "MG", "MW",
@@ -65,21 +69,21 @@ def get_random_africa_ip():
         randomip.clear()
 
     #delete later
-    if os.path.exists("files/ip_Africa_address.txt"):
-        os.remove("files/ip_Africa_address.txt")
-    file = open("files/ip_Africa_address.txt", 'a')
-    for ip in ipaddress:
-        file.write(str(ip))
-        file.write('\n')
-    file.close()
+    # if os.path.exists("files/ip_Africa_address.txt"):
+    #     os.remove("files/ip_Africa_address.txt")
+    # file = open("files/ip_Africa_address.txt", 'a')
+    # for ip in ipaddress:
+    #     file.write(str(ip))
+    #     file.write('\n')
+    # file.close()
 
     return ipaddress
 
 
-def main():
-    scrape_africa_asn()
-    print(len(get_random_africa_ip()))
-
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     scrape_africa_asn()
+#     print(len(get_random_africa_ip()))
+#
+#
+# if __name__ == "__main__":
+#     main()

@@ -12,7 +12,7 @@ import MongoOperations as mo
 
 "note: use pygal to visualize data"
 
-ATLAS_API_KEY = ""
+ATLAS_API_KEY = "695ba3a2-801a-4923-b17a-6c3e2eb36815"
 ping_test_id = []
 trace_test_id = []
 African_countries = ["DZ", "AO", "BJ", "BW", "BF", "BI", "CM", "CV", "CF", "TD", "KM", "CG", "CD", "CI", "DJ",

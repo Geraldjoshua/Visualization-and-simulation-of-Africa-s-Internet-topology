@@ -1,3 +1,5 @@
+import time
+
 from pymongo import MongoClient
 import geoip2.database
 import random
@@ -7,13 +9,14 @@ import numpy as np
 
 geolocator = Nominatim(user_agent="city_geoloc")
 globalUniqueNodes = []
-connection = ''
+connection = "mongodb+srv://willie:admin123@testing.ac8uu.mongodb.net/test?retryWrites=true&w=majority"
+
 
 def upload_to_mongo(platform, data):
     # establishing connection
     try:
         connect = MongoClient(connection)
-        # print("Connected successfully!!!")
+
     except:
         print("Could not connect to MongoDB")
 
@@ -103,13 +106,13 @@ def delete_empty_traces(platform):
         # result = ripe_collection.delete_many(delete_query)
 
 
-def geolocate(city=None, country=None):
+def geolocate(city=None, country=None, ip=None):
     '''
     Inputs city and country, or just country. Returns the lat/long coordinates of
     either the city if possible, if not, then returns lat/long of the center of the country.
     '''
 
-    # If the city exists,
+    # If the country exists,
     if country is not None:
         # Try
         try:
@@ -125,8 +128,14 @@ def geolocate(city=None, country=None):
     else:
         # Try
         try:
-            # Geolocate the center of the country
+            # Geolocate the center of the city
             loc = geolocator.geocode(city)
+            if loc is None:
+                path_to_db = "files/GeoLite2-City.mmdb"
+                with geoip2.database.Reader(path_to_db) as reader:
+                    response = reader.city(ip)
+                    return response.location.latitude, response.location.longitude
+
             # And return latitude and longitude
             return loc.latitude, loc.longitude
             # Otherwise
@@ -159,13 +168,14 @@ def get_asn_location(platform):
     if platform == "SpeedChecker":
         collection = db.Speedcheckerasnlocation
         for item in globalUniqueNodes:
-            node_name = item[0]
-            node_city = item[1]
-            city_lat, city_long = geolocate(city=node_city)
-            node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
-            my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
-                       "City": str(node_city).rstrip('\r\n')}
-            collection.insert_one(my_dict)
+            if item is not None:
+                node_name = item[0]
+                node_city = item[1]
+                city_lat, city_long = geolocate(city=node_city, ip=item[2])
+                node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
+                my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
+                           "City": str(node_city).rstrip('\r\n')}
+                collection.insert_one(my_dict)
     elif platform == "CAIDA":
         # havent thought about it yet
         print("not yet")
@@ -192,9 +202,10 @@ def get_linked_asn(platform):
         sources = []
         targets = []
         uniqueNodes = []  # list of all unique nodes
+        rtt_list = []
         for x in mycol.find():
             if len(x['Tracert']) != 0:
-                source = [x['Tracert'][0]['ASN'], x['Tracert'][0]['City']]
+                source = [x['Tracert'][0]['ASN'], x['Tracert'][0]['City'], x['Tracert'][0]['IP']]
             else:
                 continue
 
@@ -202,7 +213,7 @@ def get_linked_asn(platform):
             for a in x['Tracert']:
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
-                    source = [a['ASN'], a['City']]
+                    source = [a['ASN'], a['City'], a['IP']]
                     continue
 
                 # first check if ASN='' or City=''
@@ -210,28 +221,50 @@ def get_linked_asn(platform):
                     continue
 
                 # destination is a list variable
-                destination = [a['ASN'], a['City']]
+                destination = [a['ASN'], a['City'], a['IP']]
                 # keep updating the destination variable until the ASN is different from source
                 if source == destination:
                     continue
 
+                # append rtt to source and destination
+                total = 0
+                if a['PingTimeArray'] is not None:
+                    for rtt in a['PingTimeArray']:
+                        total += int(rtt)
+                    avg_rtt = round(total / len(a['PingTimeArray']), 2)
+                else:
+                    avg_rtt = 0.0
                 sources.append(source)
                 targets.append(destination)
+                rtt_list.append(avg_rtt)
 
                 # to ensure first source node of iteration is not left out
+                not_found = True
                 if source not in uniqueNodes:
-                    uniqueNodes.append(source)
+                    for item in uniqueNodes:
+                        if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
+                                item[1]).strip():
+                            not_found = False
+                            break
+                    if not_found:
+                        uniqueNodes.append(source)
 
                 # exchange the variables
                 source = destination
                 # to ensure end destination nodes are not left out
                 if source not in uniqueNodes:
-                    uniqueNodes.append(source)
+                    for item in uniqueNodes:
+                        if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
+                                item[1]).strip():
+                            not_found = False
+                            break
+                    if not_found:
+                        uniqueNodes.append(source)
         global globalUniqueNodes
         globalUniqueNodes = uniqueNodes
         for i in range(len(sources)):
             my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
-                       "Target_City": targets[i][1]}
+                       "Target_City": targets[i][1], "RTT": rtt_list[i]}
             collection.insert_one(my_dict)
 
     elif platform == "CAIDA":
@@ -342,12 +375,52 @@ def upload_ping_to_mongo(platform, data):
 
     connect.close()
 
+
+def get_topology_data(platform):
+    # establishing connection
+    try:
+        connect = MongoClient(connection)
+        # print("Connected successfully!!!")
+    except:
+        print("Could not connect to MongoDB")
+
+    # connecting or switching to the database
+    db = connect.tracerouteDB
+    if platform == "SpeedChecker":
+        data = []
+        linkdata = []
+        nodedata = []
+        links = db.Speedcheckerlinkedasn
+        nodes = db.Speedcheckerasnlocation
+        cursor = links.find()
+        for record in cursor:
+            dat = {"Source_ASN": record['Source_ASN'], "Source_City": record['Source_City'],
+                   "Target_ASN": record['Target_ASN'],
+                   "Target_City": record['Target_City'], "RTT": record['RTT']}
+            linkdata.append(dat)
+        data.append(linkdata)
+        cursor = nodes.find()
+        for record in cursor:
+            dat = {"ASN": record['ASN'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
+                   "City": record['City']}
+            nodedata.append(dat)
+        data.append(nodedata)
+        connect.close()
+        return data
+
+
 # def main():
-#     # upload_to_mongo("SpeedChecker")
+#     get_topology_data("SpeedChecker")
+#     # get_linked_asn("SpeedChecker")
+#     # time.sleep(2)
+#     # get_asn_location("SpeedChecker")
+#     # drop_mongo_collection()
+#     # res = {"hey":"hey"}
+#     # upload_to_mongo("SpeedChecker",res)
 #     # update_mongo_with_asn("SpeedChecker")
 #     # update_mongo_with_alias_set("SpeedChecker")
 #     # get_asn_location("SpeedChecker")
-#     drop_mongo_collection()
+#     # drop_mongo_collection()
 #
 #
 # if __name__ == "__main__":

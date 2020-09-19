@@ -9,7 +9,7 @@
     <link crossorigin="anonymous" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" rel="stylesheet">
     <script src="https://d3js.org/d3.v4.min.js"></script>
-    <script src="//maps.googleapis.com/maps/api/js"></script>
+    <script src="//maps.googleapis.com/maps/api/js?key=AIzaSyAdUAqT9PRkg6x1mswnL-USnLjpgqDLxaA&callback"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
@@ -132,7 +132,11 @@
 <script>
 
     // Create the Google Map…
-
+    var dat = {{data|tojson}}
+    var data = [];
+    var datalinks = [];
+    data = dat[1];
+    datalinks = dat[0];
     var nodes = [];
     var links = [];
     var map = new google.maps.Map(document.getElementById('map'), {
@@ -141,22 +145,34 @@
         //mapTypeId: google.maps.MapTypeId.TERRAIN
     });
 
-    // Load the station data. When the data comes back, create an overlay.
-    d3.queue()
-        .defer(d3.csv,"static/asn_loc.csv")
-        .defer(d3.csv, "static/asn_links.csv")
-        .await(ready)
+    class Node {
+        constructor(asn_number, pos) {
+            this.asn_number = asn_number;
+            this.pos = pos;
+        }
+    }
 
-    function ready(error, data,datalinks) {
-        if (error) throw error;
+    class Link {
+        constructor(node1, node2,time) {
+            this.source = node1;
+            this.target = node2;
+            this.rtt = time;
+        }
+    }
+
+    var k;
+
+    var nodes_red = [] //Nodes Array
+
+    window.onload = ready(data,datalinks);
+    function ready(data,datalinks) {
+
         draw(data,datalinks);
 
     }
 
 
-    var k;
 
-    var nodes_red = [] //Nodes Array
 
     function draw(data,datalinks) {
           var b;
@@ -181,16 +197,17 @@
                 },
             });
           }
+
           var p;
           for(p=0; p<datalinks.length; p++){
                var source; var target; var j;
 
                for(j=0; j<nodes_red.length;j++){
-                    if(datalinks[p].Source == nodes_red[j].asn_number){
+                    if(datalinks[p].Source_ASN == nodes_red[j].asn_number){
                       source = nodes_red[j].pos;
                     }
 
-                    if(datalinks[p].Target == nodes_red[j].asn_number){
+                    if(datalinks[p].Target_ASN == nodes_red[j].asn_number){
                       target = nodes_red[j].pos;
                     }
 
@@ -223,89 +240,6 @@
           line.set('icons', icons);
         }, 20);
     }
-
-    class Node {
-        constructor(asn_number, pos) {
-            this.asn_number = asn_number;
-            this.pos = pos;
-        }
-    }
-
-    class Link {
-        constructor(node1, node2) {
-            this.source = node1;
-            this.target = node2;
-        }
-    }
-<!--    var myVar = setInterval(myTimer, 10800000);-->
-<!--    var selplatform;-->
-<!--    function myTimer() {-->
-<!--      var platform = document.getElementById("platforms");-->
-<!--      var selectedplatform = platform.options[platform.selectedIndex].value;-->
-<!--      selplatform = selectedplatform-->
-
-<!--      var entry = {-->
-<!--        platforms: selectedplatform-->
-
-<!--      };-->
-
-<!--        fetch(`${window.origin}/create-measurement`, {-->
-<!--            method: "POST",-->
-<!--            credentials: "include",-->
-<!--            body: JSON.stringify(entry),-->
-<!--            cache: "no-cache",-->
-<!--            headers: new Headers({-->
-<!--              "content-type": "application/json"-->
-<!--            })-->
-<!--          })-->
-<!--          .then(function(response) {-->
-<!--            if (response.status !== 200) {-->
-<!--              console.log(`Looks like there was a problem. Status code: ${response.status}`);-->
-<!--              return;-->
-<!--            }-->
-<!--            response.json().then(function(data) {-->
-<!--              console.log(data);-->
-<!--            });-->
-<!--          })-->
-<!--          .catch(function(error) {-->
-<!--            console.log("Fetch error: " + error);-->
-<!--        });-->
-
-<!--      //console.log(selectedplatform);-->
-<!--    }-->
-
-
-<!--    var fetchVar = setInterval(fetchTimer, 13200000);-->
-<!--    function fetchTimer() {-->
-<!--        var entry = {-->
-<!--        platforms: selplatform-->
-
-<!--        };-->
-
-<!--        fetch(`${window.origin}/fetch-measurement`, {-->
-<!--            method: "POST",-->
-<!--            credentials: "include",-->
-<!--            body: JSON.stringify(entry),-->
-<!--            cache: "no-cache",-->
-<!--            headers: new Headers({-->
-<!--              "content-type": "application/json"-->
-<!--            })-->
-<!--          })-->
-<!--          .then(function(response) {-->
-<!--            if (response.status !== 200) {-->
-<!--              console.log(`Looks like there was a problem. Status code: ${response.status}`);-->
-<!--              return;-->
-<!--            }-->
-<!--            response.json().then(function(data) {-->
-<!--              console.log(data);-->
-<!--            });-->
-<!--          })-->
-<!--          .catch(function(error) {-->
-<!--            console.log("Fetch error: " + error);-->
-<!--        });-->
-<!--      //console.log(selplatform)-->
-
-<!--    }-->
 
 
 </script>
