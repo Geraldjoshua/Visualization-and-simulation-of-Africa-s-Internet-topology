@@ -80,20 +80,6 @@ def upload_to_mongo(platform, data):
 def delete_empty_traces(platform):
     # establishing connection
     try:
-        connect = MongoClient('mongodb://localhost:27017/')
-        print("Connected successfully!!!")
-    except:
-        print("Could not connect to MongoDB")
-
-    # connecting or switching to the database
-    db = connect.tracerouteDB
-
-    # creating or switching to demoCollection
-    collection = db.traces
-
-def delete_empty_traces(platform):
-    # establishing connection
-    try:
         connect = MongoClient(connection)
         # print("Connected successfully!!!")
     except:
