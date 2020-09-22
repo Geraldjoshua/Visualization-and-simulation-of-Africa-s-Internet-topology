@@ -9,7 +9,7 @@ import numpy as np
 
 geolocator = Nominatim(user_agent="city_geoloc")
 globalUniqueNodes = []
-connection = ""
+connection = "mongodb+srv://willie:admin123@testing.ac8uu.mongodb.net/test?retryWrites=true&w=majority"
 
 
 def upload_to_mongo(platform, data):
@@ -166,16 +166,23 @@ def get_asn_location(platform):
     db = connect.tracerouteDB
 
     if platform == "SpeedChecker":
+        #collection for the pop level locations
         collection = db.Speedcheckerasnlocation
+        #create collection for the city nodes for city level map
+        city_nodes = db.SpeedcheckerCityLocations
+        print("Inserting ASN and City locations into database....")
         for item in globalUniqueNodes:
             if item is not None:
                 node_name = item[0]
                 node_city = item[1]
                 city_lat, city_long = geolocate(city=node_city, ip=item[2])
+                city_dict = {"Latitude": city_lat, "Longitude": city_long,
+                           "City": str(node_city).rstrip('\r\n')}
                 node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
                 my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
                            "City": str(node_city).rstrip('\r\n')}
                 collection.insert_one(my_dict)
+                city_nodes.insert_one(city_dict)
     elif platform == "CAIDA":
         # havent thought about it yet
         print("not yet")
@@ -199,8 +206,11 @@ def get_linked_asn(platform):
     if platform == "SpeedChecker":
         collection = mydb["Speedcheckerlinkedasn"]
         mycol = mydb["Speedcheckertraces"]
+        paths_col = mydb["SpeedcheckerPaths"]
         sources = []
         targets = []
+        traces = []
+        trace_path = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []
         for x in mycol.find():
@@ -223,8 +233,11 @@ def get_linked_asn(platform):
                 # destination is a list variable
                 destination = [a['ASN'], a['City'], a['IP']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
+
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
@@ -241,6 +254,7 @@ def get_linked_asn(platform):
                 # to ensure first source node of iteration is not left out
                 not_found = True
                 if source not in uniqueNodes:
+                    #uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -253,6 +267,7 @@ def get_linked_asn(platform):
                 source = destination
                 # to ensure end destination nodes are not left out
                 if source not in uniqueNodes:
+                    #uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -260,12 +275,26 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            #print(trace_path)
+            # if len(trace_path)>1:
+            #     path_dict = {"Path": trace_path}
+            #     paths_col.insert_one(path_dict)
+            # trace_path.clear()
         global globalUniqueNodes
         globalUniqueNodes = uniqueNodes
-        for i in range(len(sources)):
-            my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
-                       "Target_City": targets[i][1], "RTT": rtt_list[i]}
-            collection.insert_one(my_dict)
+
+        #for i in range(len())
+        # f = open("updatedUniqueNodes.txt", 'w', encoding="utf-8")
+        # print("writing...")
+        # for node in uniqueNodes:
+        #     f.write(str(node)+'\n')
+        # f.close()
+        
+        # for i in range(len(sources)):
+        #     my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
+        #                "Target_City": targets[i][1], "RTT": rtt_list[i]}
+        #     collection.insert_one(my_dict)
 
     elif platform == "CAIDA":
         # havent thought about it yet
@@ -300,6 +329,8 @@ def drop_mongo_collection():
     mycol_7 = mydb["Speedcheckerasnlocation"]
     mycol_8 = mydb["Ripeasnlocation"]
     mycol_9 = mydb["Caidaasnlocation"]
+    mycol_10 = mydb["SpeedcheckerCityLocations"]
+    mycol_11 = mydb["SpeedcheckerPaths"]
     mycol_1.drop()
     mycol_2.drop()
     mycol_3.drop()
@@ -309,6 +340,8 @@ def drop_mongo_collection():
     mycol_7.drop()
     mycol_8.drop()
     mycol_9.drop()
+    mycol_10.drop()
+    mycol_11.drop()
     connect.close()
 
 
@@ -392,8 +425,12 @@ def get_topology_data(platform):
         data = []
         linkdata = []
         nodedata = []
+        citydata = []
         links = db.Speedcheckerlinkedasn
         nodes = db.Speedcheckerasnlocation
+        city_nodes = db.SpeedcheckerCityLocations
+
+        #fetch links data
         cursor = links.find()
         for record in cursor:
             dat = {"Source_ASN": record['Source_ASN'], "Source_City": record['Source_City'],
@@ -401,30 +438,62 @@ def get_topology_data(platform):
                    "Target_City": record['Target_City'], "RTT": record['RTT']}
             linkdata.append(dat)
         data.append(linkdata)
+        #fetch asn nodes data
         cursor = nodes.find()
         for record in cursor:
             dat = {"ASN": record['ASN'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
                    "City": record['City']}
             nodedata.append(dat)
         data.append(nodedata)
-        connect.close()
+
+        #fetch city nodes data
+        cursor = city_nodes.find()
+        for record in cursor:
+            dat = {"Longitude": record['Longitude'], "Latitude": record['Latitude'],
+                   "City": record['City']}
+            citydata.append(dat)
+        data.append(citydata)
         return data
 
+def get_paths(platform):
+    # establishing connection
+    try:
+        connect = MongoClient(connection)
+        # print("Connected successfully!!!")
+    except:
+        print("Could not connect to MongoDB")
+
+    # connecting or switching to the database
+    db = connect.tracerouteDB
+    if platform == "SpeedChecker":
+        data = []
+        pathsdata = []
+        paths = db.SpeedcheckerPaths
+
+        #fetch the paths
+        cursor = paths.find({}, {"_id":0})
+        for record in cursor:
+            pathsdata.append(record['Path'])
+        connect.close()
+        return pathsdata
 
 
-# def main():
-#     get_topology_data("SpeedChecker")
-#     # get_linked_asn("SpeedChecker")
-#     # time.sleep(2)
-#     # get_asn_location("SpeedChecker")
-#     # drop_mongo_collection()
-#     # res = {"hey":"hey"}
-#     # upload_to_mongo("SpeedChecker",res)
-#     # update_mongo_with_asn("SpeedChecker")
-#     # update_mongo_with_alias_set("SpeedChecker")
-#     # get_asn_location("SpeedChecker")
-#     # drop_mongo_collection()
-#
-#
-# if __name__ == "__main__":
-#     main()
+
+
+def main():
+    #drop_mongo_collection()
+    get_linked_asn("SpeedChecker")
+    # get_asn_location("SpeedChecker")
+    # data = get_topology_data("SpeedChecker")
+    # print(data[2])
+    # time.sleep(2)
+    # get_asn_location("SpeedChecker")
+    # res = {"hey":"hey"}
+    # upload_to_mongo("SpeedChecker",res)
+    # update_mongo_with_asn("SpeedChecker")
+    # update_mongo_with_alias_set("SpeedChecker")
+    # drop_mongo_collection()
+
+
+if __name__ == "__main__":
+    main()

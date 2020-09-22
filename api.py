@@ -54,8 +54,9 @@ tl.start(block=False)
 def index():
     # data array contains 2 arrays [linksarray object, nodesarray object]
     data = mo.get_topology_data("SpeedChecker")
+    paths = mo.get_paths("SpeedChecker")
     #data = [[{"key":2,"p":5}],[{"tes":4,"les":5}]]
-    return render_template("/index.html", error=False,data=data)
+    return render_template("/index.html", error=False,data=data, paths=paths)
 
 # test to insert data to the data base
 @app.route("/test")
