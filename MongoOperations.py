@@ -206,8 +206,11 @@ def get_linked_asn(platform):
     if platform == "SpeedChecker":
         collection = mydb["Speedcheckerlinkedasn"]
         mycol = mydb["Speedcheckertraces"]
+        paths_col = mydb["SpeedcheckerPaths"]
         sources = []
         targets = []
+        traces = []
+        trace_path = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []
         for x in mycol.find():
@@ -232,6 +235,9 @@ def get_linked_asn(platform):
                 # keep updating the destination variable until the ASN is different from source
                 if source[:2] == destination[:2]:
                     continue
+
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
@@ -269,8 +275,16 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            #print(trace_path)
+            # if len(trace_path)>1:
+            #     path_dict = {"Path": trace_path}
+            #     paths_col.insert_one(path_dict)
+            # trace_path.clear()
         global globalUniqueNodes
         globalUniqueNodes = uniqueNodes
+
+        #for i in range(len())
         # f = open("updatedUniqueNodes.txt", 'w', encoding="utf-8")
         # print("writing...")
         # for node in uniqueNodes:
@@ -316,6 +330,7 @@ def drop_mongo_collection():
     mycol_8 = mydb["Ripeasnlocation"]
     mycol_9 = mydb["Caidaasnlocation"]
     mycol_10 = mydb["SpeedcheckerCityLocations"]
+    mycol_11 = mydb["SpeedcheckerPaths"]
     mycol_1.drop()
     mycol_2.drop()
     mycol_3.drop()
@@ -326,6 +341,7 @@ def drop_mongo_collection():
     mycol_8.drop()
     mycol_9.drop()
     mycol_10.drop()
+    mycol_11.drop()
     connect.close()
 
 
@@ -437,17 +453,39 @@ def get_topology_data(platform):
                    "City": record['City']}
             citydata.append(dat)
         data.append(citydata)
-        connect.close()
         return data
 
+def get_paths(platform):
+    # establishing connection
+    try:
+        connect = MongoClient(connection)
+        # print("Connected successfully!!!")
+    except:
+        print("Could not connect to MongoDB")
+
+    # connecting or switching to the database
+    db = connect.tracerouteDB
+    if platform == "SpeedChecker":
+        data = []
+        pathsdata = []
+        paths = db.SpeedcheckerPaths
+
+        #fetch the paths
+        cursor = paths.find({}, {"_id":0})
+        for record in cursor:
+            pathsdata.append(record['Path'])
+        connect.close()
+        return pathsdata
 
 
-#def main():
-    # get_linked_asn("SpeedChecker")
+
+
+def main():
+    #drop_mongo_collection()
+    get_linked_asn("SpeedChecker")
     # get_asn_location("SpeedChecker")
     # data = get_topology_data("SpeedChecker")
     # print(data[2])
-    #drop_mongo_collection()
     # time.sleep(2)
     # get_asn_location("SpeedChecker")
     # res = {"hey":"hey"}
@@ -457,5 +495,5 @@ def get_topology_data(platform):
     # drop_mongo_collection()
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
