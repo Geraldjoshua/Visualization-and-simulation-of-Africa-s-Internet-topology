@@ -67,14 +67,14 @@ def speed():
 @app.route('/caida')
 def caida():
     # data array contains 2 arrays [linksarray object, nodesarray object]
-    data = mo.get_topology_data("SpeedChecker")
+    data = mo.get_topology_data("CAIDA")
     return render_template("/caida.html", error=False, data=data)
 
 
 @app.route('/ripe')
 def ripe():
     # data array contains 2 arrays [linksarray object, nodesarray object]
-    data = mo.get_topology_data("SpeedChecker")
+    data = mo.get_topology_data("RIPE")
     return render_template("/Ripe.html", error=False, data=data)
 
 
