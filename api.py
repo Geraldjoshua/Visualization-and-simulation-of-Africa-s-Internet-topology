@@ -13,7 +13,7 @@ import SpeedcheckerMeasure as sc
 app = Flask(__name__)
 ip_Africa_address = []
 tl = Timeloop()
-trace_done = False  # for the first initial start of trace
+#trace_done = False  # for the first initial start of trace
 
 
 # @tl.job(interval=timedelta(seconds=10800))  # 3hours  do trace route every after 3 hours
