@@ -9,7 +9,7 @@ import numpy as np
 
 geolocator = Nominatim(user_agent="city_geoloc")
 globalUniqueNodes = []
-connection = "mongodb+srv://willie:admin123@testing.ac8uu.mongodb.net/test?retryWrites=true&w=majority"
+connection = ""
 
 
 def upload_to_mongo(platform, data):
