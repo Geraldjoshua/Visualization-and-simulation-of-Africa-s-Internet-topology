@@ -670,16 +670,20 @@ def get_topology_data(platform):
     if platform == "SpeedChecker":
         links = db.Speedcheckerlinkedasn
         nodes = db.Speedcheckerasnlocation
+        city_nodes = db.SpeedcheckerCityLocations
     elif platform == "CAIDA":
         links = db.Caidalinkedasn
         nodes = db.Caidaasnlocation
+        city_nodes = db.CaidaCityLocations
     elif platform == "RIPE":
         links = db.Ripelinkedasn
         nodes = db.Ripeasnlocation
+        city_nodes = db.RipeCityLocations
 
     data = []
     linkdata = []
     nodedata = []
+    citydata = []
     cursor = links.find()
     for record in cursor:
         dat = {"Source_ASN": record['Source_ASN'], "Source_City": record['Source_City'],
@@ -687,12 +691,22 @@ def get_topology_data(platform):
                "Target_City": record['Target_City'], "RTT": record['RTT']}
         linkdata.append(dat)
     data.append(linkdata)
+
+    #fetch the nodes data
     cursor = nodes.find()
     for record in cursor:
         dat = {"ASN": record['ASN'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
                "City": record['City']}
         nodedata.append(dat)
     data.append(nodedata)
+
+    #fetch city nodes data
+    cursor = city_nodes.find()
+    for record in cursor:
+        dat = {"Longitude": record['Longitude'], "Latitude": record['Latitude'],
+               "City": record['City']}
+        citydata.append(dat)
+    data.append(citydata)
     connect.close()
     return data
 
