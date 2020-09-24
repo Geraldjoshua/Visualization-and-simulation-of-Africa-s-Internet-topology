@@ -16,37 +16,37 @@ tl = Timeloop()
 trace_done = False  # for the first initial start of trace
 
 
-@tl.job(interval=timedelta(seconds=10800))  # 3hours  do trace route every after 3 hours
-def sample_job_every_3hours():
-    if len(ip_Africa_address) > 0:
-        global trace_done
-        trace_done = True
-        sc.post_trace_all_ip_test(ip_Africa_address)
-        rm.post_trace_all_ip_test(ip_Africa_address)
-        cm.post_trace_all_ip_test(ip_Africa_address)
-        # print("2s job current time : {}".format(time.ctime()))
+# @tl.job(interval=timedelta(seconds=10800))  # 3hours  do trace route every after 3 hours
+# def sample_job_every_3hours():
+#     if len(ip_Africa_address) > 0:
+#         global trace_done
+#         trace_done = True
+#         sc.post_trace_all_ip_test(ip_Africa_address)
+#         rm.post_trace_all_ip_test(ip_Africa_address)
+#         cm.post_trace_all_ip_test(ip_Africa_address)
+#         # print("2s job current time : {}".format(time.ctime()))
 
 
-@tl.job(interval=timedelta(seconds=13200))  # 3hrs.40 min do a get readings from traceroute done
-def sample_job_every_3hours_40_min():
-    if trace_done:
-        sc.get_trace_all_result()
-        rm.get_trace_all_result()
-        cm.get_trace_all_result()
-        mo.delete_empty_traces("SpeedChecker")
-        mo.delete_empty_traces("CAIDA")
-        mo.delete_empty_traces("RIPE")
-        # print("5s job current time : {}".format(time.ctime()))
+# @tl.job(interval=timedelta(seconds=13200))  # 3hrs.40 min do a get readings from traceroute done
+# def sample_job_every_3hours_40_min():
+#     if trace_done:
+#         sc.get_trace_all_result()
+#         rm.get_trace_all_result()
+#         cm.get_trace_all_result()
+#         mo.delete_empty_traces("SpeedChecker")
+#         mo.delete_empty_traces("CAIDA")
+#         mo.delete_empty_traces("RIPE")
+#         # print("5s job current time : {}".format(time.ctime()))
 
 
-@tl.job(interval=timedelta(seconds=86400))  # get new ipaddresses every after 24 hours
-def sample_job_every_24hours():
-    global ip_Africa_address
-    ipf.scrape_africa_asn()
-    ip_Africa_address = ipf.get_random_africa_ip()
+# @tl.job(interval=timedelta(seconds=86400))  # get new ipaddresses every after 24 hours
+# def sample_job_every_24hours():
+#     global ip_Africa_address
+#     ipf.scrape_africa_asn()
+#     ip_Africa_address = ipf.get_random_africa_ip()
 
 
-tl.start(block=False)
+# tl.start(block=False)
 
 
 @app.route('/')
