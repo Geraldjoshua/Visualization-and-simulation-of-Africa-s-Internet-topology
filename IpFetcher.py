@@ -68,22 +68,4 @@ def get_random_africa_ip():
         ipaddress.append(randomip[1])
         randomip.clear()
 
-    #delete later
-    # if os.path.exists("files/ip_Africa_address.txt"):
-    #     os.remove("files/ip_Africa_address.txt")
-    # file = open("files/ip_Africa_address.txt", 'a')
-    # for ip in ipaddress:
-    #     file.write(str(ip))
-    #     file.write('\n')
-    # file.close()
-
     return ipaddress
-
-
-# def main():
-#     scrape_africa_asn()
-#     print(len(get_random_africa_ip()))
-#
-#
-# if __name__ == "__main__":
-#     main()

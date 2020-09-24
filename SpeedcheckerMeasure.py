@@ -10,7 +10,7 @@ import IpFetcher as ip
 """
 get all active probes in Africa
 """
-ApiKey = ""
+ApiKey = "7295deda-f359-4ac9-918f-93fdc01992a8"
 
 Availableprobes = {}
 ping_test_id = []
@@ -30,7 +30,6 @@ def get_available_probes():
         "apikey": ApiKey,
     }
     url = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/GetProbes?apikey=7295deda-f359-4ac9-918f-93fdc01992a8"
-
 
     global Availableprobes
     country_probes = {}
@@ -85,9 +84,6 @@ def post_ping_all_ip_test(ip_Africa_address):
 
     }
     test_res = []
-
-    # with open('files/country_and_probes.txt') as json_file:
-    #     data = json.load(json_file)
 
     # for probe in probe_id:
     for x, y in data.items():
@@ -184,16 +180,10 @@ doing a trace given a list of destination ip address
 
 # def post_trace_all_ip_test(ip_Africa_address):
 def post_trace_all_ip_test(ip_Africa_address):
+    print(ip_Africa_address[0])
     data = get_available_probes()
-    # file = open("files/Africa_probes_id.txt", 'r')
-    # probe_id = file.readlines()
-    # probe_id = random.sample(probe_id, len(probe_id))
-    # file.close()
-    #file = open("files/ip_Africa_address.txt", 'r')
-    #ip_address = file.readlines()
     ip_address = ip_Africa_address
     ip_address = random.sample(ip_address, len(ip_address))
-    #file.close()
     ip_start = 0
     url = 'https://kong.speedcheckerapi.com:8443/ProbeAPIv2/StartTracertTest'
     headers = {
@@ -203,8 +193,6 @@ def post_trace_all_ip_test(ip_Africa_address):
 
     }
     test_res = []
-    # with open('files/country_and_probes.txt') as json_file:
-    #     data = json.load(json_file)
 
     # for probe in probe_id:
     for x, y in data.items():
@@ -275,6 +263,7 @@ def post_trace_all_ip_test(ip_Africa_address):
 
     global trace_test_id
     trace_test_id = test_res
+    print("done")
 
 
 """
@@ -283,12 +272,9 @@ returning trace results for a list of destination ip address
 
 
 def get_trace_all_result():
-    # if os.path.exists("files/trace"):
-    #     shutil.rmtree("files/trace")
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
-    # os.mkdir("files/trace")
-    #file = open("files/trace_test_id.txt", "r")
-    #trace_results = file.readlines()
+    if len(trace_test_id) > 0:
+        mo.drop_mongo_collection()
     for result in trace_test_id:
         if result is not None:
             testID = result.strip()
@@ -305,18 +291,5 @@ def get_trace_all_result():
                 print("empty")
             res = json.loads(r.text)
             if "200" == res['ResponseStatus']['StatusCode']:
+                print("hey i am putting to the mongo")
                 mo.upload_to_mongo("SpeedChecker", res)
-
-
-# def main():
-#     ip.scrape_africa_asn()
-#     ip_Africa_address = ip.get_random_africa_ip()
-#     get_available_probes()
-#     post_trace_all_ip_test(ip_Africa_address)
-#     time.sleep(2400)
-#     get_trace_all_result()
-#     mo.delete_empty_traces("SpeedChecker")
-#
-#
-# if __name__ == "__main__":
-#     main()

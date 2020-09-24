@@ -61,27 +61,14 @@ def post_ping_all_ip_test(ip_Africa_address):
         print(response)
         if is_success:
             result_id.append(response['measurements'])
-    # print(len(result_id))
     ping_test_id = result_id
-
-    # if os.path.exists("files/ping_test_id.txt"):
-    #     os.remove("files/ping_test_id.txt")
-    # file = open("files/ping_test_id.txt", "a")
-    # for tid in result_id:
-    #     for a in tid:
-    #         file.write(str(a))
-    #         file.write('\n')
-    # file.close()
 
 
 def post_trace_all_ip_test(ip_Africa_address):
     global trace_test_id
-    # file = open("files/ip_Africa_address.txt", 'r')
     ip_address = ip_Africa_address  # file.readlines()
     ip_address = random.sample(ip_address, len(ip_address))
-    # file.close()
-    # file = open("files/country_list.txt", "r")
-    african_countries = African_countries  # file.readlines()
+    african_countries = African_countries
     ip_start = 0
     result_id = []
     for country in african_countries:
@@ -119,23 +106,8 @@ def post_trace_all_ip_test(ip_Africa_address):
 
     trace_test_id = result_id
 
-    # # get multiple targets
-    # if os.path.exists("files/trace_test_id.txt"):
-    #     os.remove("files/trace_test_id.txt")
-    # file = open("files/trace_test_id.txt", "a")
-    # for tid in result_id:
-    #     for a in tid:
-    #         file.write(str(a))
-    #         file.write('\n')
-    # file.close()
-
 
 def get_ping_all_result():
-    # if os.path.exists("files/ping"):
-    #     shutil.rmtree("files/ping")
-    # file = open("files/ping_test_id.txt")
-    # os.mkdir("files/ping")
-    # result_id = ping_test_id #file.readlines()
     for pid in ping_test_id:
         if pid is not None:
             kwargs = {
@@ -145,17 +117,11 @@ def get_ping_all_result():
             if is_success:
                 for a in results:
                     mo.upload_ping_to_mongo("RIPE", a)
-                    # s = "files/ping/ping" + pid.strip() + ".txt"
-                    # with open(s, 'w') as outfile:
-                    #     json.dump(a, outfile)
 
 
 def get_trace_all_result():
-    # if os.path.exists("files/trace"):
-    #     shutil.rmtree("files/trace")
-    # file = open("files/trace_test_id.txt")
-    # os.mkdir("files/trace")
-    # result_id = file.readlines()
+    if len(trace_test_id) > 0:
+        mo.drop_mongo_collection()
     for pid in trace_test_id:
         if pid is not None:
             kwargs = {
@@ -165,18 +131,3 @@ def get_trace_all_result():
             if is_success:
                 for a in results:
                     mo.upload_to_mongo("RIPE", a)
-                    # s = "files/trace/trace" + pid.strip() + ".txt"
-                    # with open(s, 'w') as outfile:
-                    #     json.dump(a, outfile)
-
-
-# def main():
-#     # post_trace_all_ip_test()
-#     # post_ping_all_ip_test()
-#     # time.sleep(2400)
-#     get_trace_all_result()
-#     # get_ping_all_result()
-#
-#
-# if __name__ == "__main__":
-#     main()

@@ -133,12 +133,10 @@
 
     // Create the Google Map…
     var dat = {{data|tojson}}
-    var paths = {{paths|safe}}
     var data = [];
     var datalinks = [];
     data = dat[1];
     datalinks = dat[0];
-    city_data = dat[2]
     var nodes = [];
     var links = [];
     var map = new google.maps.Map(document.getElementById('map'), {
@@ -148,19 +146,10 @@
     });
 
     class Node {
-        constructor(asn_number, city, pos) {
+        constructor(asn_number, pos) {
             this.asn_number = asn_number;
-            this.city = city;
             this.pos = pos;
         }
-    }
-
-    class CityNode {
-      constructor(city, asn_list, pos){
-        this.city = city;
-        this.asn_list = asn_list;
-        this.pos = pos;
-      }
     }
 
     class Link {
@@ -173,152 +162,53 @@
 
     var k;
 
-    var city_nodes = []; //Nodes Array
-    var pop_nodes = [];
-    let city_markers = [];
-    let pop_markers = [];
-    let city_links = [];
-    let pop_links = [];
+    var nodes_red = [] //Nodes Array
 
-    // window.onload = ready(data,datalinks);
-    // function ready(data,datalinks) {
+    window.onload = ready(data,datalinks);
+    function ready(data,datalinks) {
 
-    //     draw(data,datalinks);
-
-    // }
-
-    window.onload = ready_city(city_data, datalinks);
-    function ready_city(city_data,datalinks) {
-        draw_city(city_data,datalinks);
+        draw(data,datalinks);
 
     }
 
-    function ready_pop(data,datalinks) {
-        draw_pop(data,datalinks);
 
-    }
 
-    function makeMarker(position, name, color){
-      var marker = new google.maps.Marker({
-          position: position,
-          sName: name,
-          map: map,
-          // icon: {
-          //     path: google.maps.SymbolPath.CIRCLE,
-          //     scale: 2.5,
-          //     fillColor: color,
-          //     fillOpacity: 0.4,
-          //     strokeWeight: 0.4
-          // },
-      });
 
-      marker.addListener("click", () => {
-        info_wind = returnPopup(name);
-        info_wind.open(map, marker);
-      });
-      return marker;
-      //markers.push(marker);
-    }
-
-    function returnPopup(text){
-      const contentString = 
-          '<div><p>Name of City is '+text+'</p></div>';
-      const infowindow = new google.maps.InfoWindow({
-        content: contentString
-      });
-      return infowindow;
-    }
-
-    function makePolyline(flightPlanCoordinates, color){
-      var flightPath = new google.maps.Polyline({
-        path: flightPlanCoordinates,
-        geodesic: true,
-        strokeColor: color,
-        strokeOpacity: 1.0,
-        strokeWeight: 1
-      });
-      //links.push(flightPath);
-      flightPath.setMap(map);
-      return flightPath;
-    }
-
-    function draw_pop(data,datalinks) {
+    function draw(data,datalinks) {
           var b;
-          //data = nodes, datalinks = links
           for(b =0; b<data.length; b++){
                 var lat= data[b].Latitude;
                 var long= data[b].Longitude;
                 var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
                 nodes[b] = latLng;
                 var  asnnumber = data[b].ASN;
-                var city = data[b].City;
-                city = city.replace('\n', '')
-                var ip = "111.111.111.0" //data[b].IP
-                var newnode = new Node(asnnumber, city, latLng);
-                pop_nodes.push(newnode);
-                marker = makeMarker(latLng, data[b].ASN, "#F00");
-                pop_markers.push(marker);
+                var newnode = new Node(asnnumber,latLng);
+                nodes_red.push(newnode);
+                var marker = new google.maps.Marker({
+                position: latLng,
+                sName: data[b].ASN,
+                map: map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 2.5,
+                    fillColor: "#F00",
+                    fillOpacity: 0.4,
+                    strokeWeight: 0.4
+                },
+            });
           }
+
           var p;
-          var num_links = 0;
           for(p=0; p<datalinks.length; p++){
-               var source;
-               var target;
-               var j;
+               var source; var target; var j;
 
-               for(j=0; j<pop_nodes.length;j++){
-                    if(datalinks[p].Source_ASN == pop_nodes[j].asn_number && datalinks[p].Source_City == pop_nodes[j].city){
-                      //console.log("here now");
-                      source = pop_nodes[j].pos;
+               for(j=0; j<nodes_red.length;j++){
+                    if(datalinks[p].Source_ASN == nodes_red[j].asn_number){
+                      source = nodes_red[j].pos;
                     }
 
-                    if(datalinks[p].Target_ASN == pop_nodes[j].asn_number && datalinks[p].Target_City == pop_nodes[j].city){
-                      target = pop_nodes[j].pos;
-                    }
-               }
-
-              var flightPlanCoordinates = [
-                  source,target
-                ];
-              var new_link = new Link(source, target);
-              linkLine = makePolyline(flightPlanCoordinates, '#FF0000');
-              pop_links.push(linkLine);
-              num_links = num_links+1;
-          }
-          //console.log(num_links);
-    }
-
-    //function to draw City level nodes
-    function draw_city(data, datalinks){
-      var b;
-          //data = nodes, datalinks = links
-          for(b =0; b<data.length; b++){
-                var lat= data[b].Latitude;
-                var long= data[b].Longitude;
-                var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
-                nodes[b] = latLng;
-                var city = data[b].City;
-                city = city.replace('\n', '')
-                var newnode = new CityNode(city, [12, 23], latLng);
-                city_nodes.push(newnode);
-                marker = makeMarker(latLng, data[b].City, "#3a00cc");
-                city_markers.push(marker);
-          }
-          var p;
-          var num_links = 0;
-          for(p=0; p<datalinks.length; p++){
-               var source;
-               var target;
-               var j;
-
-               for(j=0; j<city_nodes.length;j++){
-                    if( datalinks[p].Source_City == city_nodes[j].city){
-                      //console.log("here now");
-                      source = city_nodes[j].pos;
-                    }
-
-                    if(datalinks[p].Target_City == city_nodes[j].city){
-                      target = city_nodes[j].pos;
+                    if(datalinks[p].Target_ASN == nodes_red[j].asn_number){
+                      target = nodes_red[j].pos;
                     }
 
                }
@@ -326,76 +216,19 @@
                 var flightPlanCoordinates = [
                     source,target
                   ];
-                var new_link = new Link(source, target);
-                linkLine = makePolyline(flightPlanCoordinates, '#3a00cc');
-                city_links.push(linkLine);
-                num_links = num_links+1;
+                  var flightPath = new google.maps.Polyline({
+                    path: flightPlanCoordinates,
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 1
+                  });
+
+                  flightPath.setMap(map);
           }
-          console.log(num_links);
+
+
     }
-
-    // Sets the map on all markers in the array.
-    function setMapOnAll(map=null, nodeType) {
-      if(nodeType=="City"){
-        for (let i = 0; i < city_markers.length; i++) {
-          city_markers[i].setMap(map);
-        }
-      }else{
-        for (let i = 0; i < pop_markers.length; i++) {
-          pop_markers[i].setMap(map);
-        }
-      }
-    }
-
-    // Sets the map on all links in the array.
-    function setMapOnLinks(map=null, nodeType) {
-      if(nodeType=="City"){
-        for (let i = 0; i < city_links.length; i++) {
-          city_links[i].setMap(map);
-        }
-      }else{
-        for (let i = 0; i < pop_links.length; i++) {
-          pop_links[i].setMap(map);
-        }
-      }
-    }
-
-    // Removes the markers from the map, but keeps them in the array.
-    function clearMarkers(nodeType) {
-      setMapOnAll(null, nodeType);
-    }
-
-    // Removes the links from the map, but keeps them in the array.
-    function clearLinks(nodeType) {
-      setMapOnLinks(null, nodeType);
-    }
-
-    var infowindow = new google.maps.InfoWindow({
-      content: 'Change the zoom level',
-      position: new google.maps.LatLng(34.5085, 8.7832),
-    });
-    infowindow.open(map);
-
-    map.addListener('zoom_changed', function() {
-      infowindow.setContent('Zoom: ' + map.getZoom());
-      if(map.getZoom()>=6){
-        clearMarkers("City");
-        clearLinks("City");
-        if(pop_links.length==0){
-          //means the POP map has not been drawn yet
-          ready_pop(data, datalinks);
-        } else {
-          setMapOnAll(map, "POP");
-          setMapOnLinks(map, "POP");
-        }
-        //load the PoP level map  
-      } else{
-        clearMarkers("POP");
-        clearLinks("POP");
-        setMapOnAll(map, "City");
-        setMapOnLinks(map, "City");
-      }
-    });
 
     function animateCircle(line) {
         var count = 0;
