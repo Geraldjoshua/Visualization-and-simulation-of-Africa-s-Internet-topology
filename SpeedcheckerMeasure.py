@@ -1,11 +1,9 @@
 import json
 import random
-import time
 
 import requests
 
 import MongoOperations as mo
-import IpFetcher as ip
 
 """
 get all active probes in Africa
@@ -180,7 +178,6 @@ doing a trace given a list of destination ip address
 
 # def post_trace_all_ip_test(ip_Africa_address):
 def post_trace_all_ip_test(ip_Africa_address):
-    print(ip_Africa_address[0])
     data = get_available_probes()
     ip_address = ip_Africa_address
     ip_address = random.sample(ip_address, len(ip_address))
@@ -254,16 +251,16 @@ def post_trace_all_ip_test(ip_Africa_address):
             except requests.exceptions.RequestException as e:
                 return "Request failed"
             res = json.loads(r.text)
+            #print(res)
             if "OK" == res['StartTracertTestResult']['Status']['StatusText']:
                 test_res.append(res['StartTracertTestResult']['TestID'])
             else:
-                print(res)
+                #print(res)
                 print("failed")
             numb_of_dest += 1
 
     global trace_test_id
     trace_test_id = test_res
-    print("done")
 
 
 """
@@ -274,7 +271,7 @@ returning trace results for a list of destination ip address
 def get_trace_all_result():
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
     if len(trace_test_id) > 0:
-        mo.drop_mongo_collection()
+        mo.drop_mongo_collection("SpeedChecker")
     for result in trace_test_id:
         if result is not None:
             testID = result.strip()
@@ -291,5 +288,6 @@ def get_trace_all_result():
                 print("empty")
             res = json.loads(r.text)
             if "200" == res['ResponseStatus']['StatusCode']:
-                print("hey i am putting to the mongo")
                 mo.upload_to_mongo("SpeedChecker", res)
+
+

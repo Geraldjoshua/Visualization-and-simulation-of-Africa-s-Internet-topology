@@ -8,7 +8,7 @@ import MongoOperations as mo
 """
 get all active probes in Africa
 """
-api_key = ""
+api_key = "ef6c77cf438ca8353f5a266498f4785b"
 g_base_url = "https://vela.caida.org/api"
 g_timeout = 120  # default timeout
 ping_test_id = []
@@ -94,10 +94,10 @@ def post_ping_all_ip_test(ip_Africa_Address):
 def get_trace_all_result():
     params = {'key': api_key}
     if len(trace_test_id) > 0:
-        mo.drop_mongo_collection()
+        mo.drop_mongo_collection("CAIDA")
     for id in trace_test_id:
         if id is not None:
-            params["id"] = id.strip()
+            params["id"] = str(id).strip()
             try:
                 r = requests.get(g_base_url + "/results", params=params, timeout=g_timeout)
             except requests.exceptions.RequestException as e:
@@ -114,7 +114,7 @@ def get_ping_all_result():
     params = {'key': api_key}
     for id in ping_test_id:
         if id is not None:
-            params["id"] = id
+            params["id"] = str(id).strip()
             try:
                 r = requests.get(g_base_url + "/results", params=params, timeout=g_timeout)
             except requests.exceptions.RequestException as e:
@@ -125,3 +125,20 @@ def get_ping_all_result():
                     for mon, v in result[k].items():
                         res = json.JSONDecoder().decode(v)
                         mo.upload_ping_to_mongo("CAIDA", res)
+
+# def main():
+#     ip.scrape_africa_asn()
+#     ip_Africa_address = ip.get_random_africa_ip()
+#     post_trace_all_ip_test(ip_Africa_address)
+#     sc.post_trace_all_ip_test(ip_Africa_address)
+#     rm.post_trace_all_ip_test(ip_Africa_address)
+#     time.sleep(1800)
+#     get_trace_all_result()
+#     sc.get_trace_all_result()
+#     rm.get_trace_all_result()
+#     #mo.delete_empty_traces("CAIDA")
+#
+#
+# if __name__ == "__main__":
+#     main()
+

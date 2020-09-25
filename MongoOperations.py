@@ -20,7 +20,7 @@ def upload_to_mongo(platform, data):
     # establishing connection
     try:
         connect = MongoClient(connection)
-        #connect = MongoClient('mongodb://localhost:27017/')
+        # connect = MongoClient('mongodb://localhost:27017/')
 
     except:
         print("Could not connect to MongoDB")
@@ -34,9 +34,9 @@ def upload_to_mongo(platform, data):
     # directory = r'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project/code/trace'
     # This creates a Reader object. You should use the same object
     # # across multiple requests as creation of it is expensive.
-    # pathToDb = "files/GeoLite2-ASN.mmdb"
-    # path_to_db = "files/GeoLite2-City.mmdb"
-    
+    pathToDb = "files/GeoLite2-ASN.mmdb"
+    path_to_db = "files/GeoLite2-City.mmdb"
+
     with geoip2.database.Reader(pathToDb) as reader:
         with geoip2.database.Reader(path_to_db) as cityReader:
             if platform == "SpeedChecker":
@@ -74,83 +74,102 @@ def upload_to_mongo(platform, data):
                     collection.insert_one(testResult)
             elif platform == "CAIDA":
                 collection = db.Caidatraces
-                #collection.drop()
-                #add this before each sequence of traceroute hop documents to indicate the start of a set of traces.
+                trace = {}
+                # collection.drop()
+                # add this before each sequence of traceroute hop documents to indicate the start of a set of traces.
                 ip = data['src']
                 try:
-                    response = reader.asn(ip)
-                    cityResponse = cityReader.city(ip)
+                    response = reader.asn(str(ip).strip())
+                    cityResponse = cityReader.city(str(ip).strip())
                     asn = response.autonomous_system_number
-                    city= cityResponse.city.name
+                    city = cityResponse.city.name
                 except:
-                    #print("Address not in database")
+                    # print("Address not in database")
                     asn = ""
                     city = ""
-                source_address = { "source_address": ip, "ASN": asn, "City": city }
-                collection.insert_one(source_address)
+                # source_address = {"source_address": ip, "ASN": asn, "City": city}
+                trace["source_address"] = ip
+                trace["ASN"] = asn
+                trace["City"] = city
 
-                #each traceroute hop is an individual document. 
+
+                #putting all traces into tracert
+                tracert = []
+
                 for testResult in data["hops"]:
 
-                    #first discard any testResult that has empty traces
-                    if testResult['addr']=="":
+                    # first discard any testResult that has empty traces
+                    if testResult['addr'] == "":
                         continue
 
                     ip = testResult['addr']
 
                     try:
-                        response = reader.asn(ip)
-                        cityResponse = cityReader.city(ip)
+                        response = reader.asn(str(ip).strip())
+                        cityResponse = cityReader.city(str(ip).strip())
                         asn = response.autonomous_system_number
-                        city= cityResponse.city.name
+                        city = cityResponse.city.name
                     except:
-                        #print("Address not in database")
+                        # print("Address not in database")
                         asn = ""
                         city = ""
 
-                    #append the new fields to the testResult
-                    hop = { "addr": ip, "ASN": asn, "City": city }
-                    collection.insert_one(hop)
+                    # append the new fields to the testResult
+                    testResult.update({"ASN": asn})
+                    testResult.update({"City": city})
+                    #hop = {"addr": ip, "ASN": asn, "City": city}
+                    tracert.append(testResult)
+                trace["Hops"] = tracert
+                collection.insert_one(trace)
+                #print("we placed the shit")
             elif platform == "RIPE":
                 collection = db.Ripetraces
-                #collection.drop()
-                #add this before each sequence of traceroute hop documents to indicate the start of a set of traces.
+                trace = {}
+                # collection.drop()
+                # add this before each sequence of traceroute hop documents to indicate the start of a set of traces.
                 ip = data['src_addr']
                 try:
-                    response = reader.asn(ip)
-                    cityResponse = cityReader.city(ip)
+                    response = reader.asn(str(ip).strip())
+                    cityResponse = cityReader.city(str(ip).strip())
                     asn = response.autonomous_system_number
-                    city= cityResponse.city.name
+                    city = cityResponse.city.name
                 except:
-                    #print("Address not in database")
+                    # print("Address not in database")
                     asn = ""
                     city = ""
-                source_address = { "source_address": ip, "ASN": asn, "City": city }
-                collection.insert_one(source_address)
+                trace["source_address"] = ip
+                trace["ASN"] = asn
+                trace["City"] = city
+                #source_address = {"source_address": ip, "ASN": asn, "City": city}
+                #collection.insert_one(source_address)
 
-                #each traceroute hop is an individual document. 
+                # putting all traces into tracert
+                tracert = []
                 for testResult in data["result"]:
 
-                    #first discard any testResult that has empty traces
-                    if testResult['result'][0]=={'x': '*'}:
+                    # first discard any testResult that has empty traces
+                    if testResult['result'][0] == {'x': '*'}:
                         continue
 
                     ip = testResult['result'][0]['from']
 
                     try:
-                        response = reader.asn(ip)
-                        cityResponse = cityReader.city(ip)
+                        response = reader.asn(str(ip).strip())
+                        cityResponse = cityReader.city(str(ip).strip())
                         asn = response.autonomous_system_number
-                        city= cityResponse.city.name
+                        city = cityResponse.city.name
+
                     except:
-                        #print("Address not in database")
+                        # print("Address not in database")
                         asn = ""
                         city = ""
 
-                    #append the new fields to the testResult
+                    # append the new fields to the testResult
                     testResult.update({"ASN": asn})
                     testResult.update({"City": city})
-                    collection.insert_one(testResult)
+                    tracert.append(testResult)
+                trace["Hops"] = tracert
+                collection.insert_one(trace)
 
     connect.close()
 
@@ -159,7 +178,7 @@ def delete_empty_traces(platform):
     # establishing connection
     try:
         connect = MongoClient(connection)
-        #connect = MongoClient('mongodb://localhost:27017/')
+        # connect = MongoClient('mongodb://localhost:27017/')
     except:
         print("Could not connect to MongoDB")
 
@@ -181,7 +200,7 @@ def delete_empty_traces(platform):
     elif platform == "RIPE":
         # creating or switching to demoCollection
         collection = db.Ripetraces
-        #delete all hops with result[0]=={'x': '*'}
+        # delete all hops with result[0]=={'x': '*'}
         delete_query = {"result.0.x": "*"}
         result = collection.delete_many(delete_query)
 
@@ -240,7 +259,7 @@ def generate_random_loc(longitude, latitude, num_points, max_radius):
 def get_asn_location(platform):
     try:
         connect = MongoClient(connection)
-        #connect = MongoClient('mongodb://localhost:27017/')
+        # connect = MongoClient('mongodb://localhost:27017/')
         # print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
@@ -249,7 +268,7 @@ def get_asn_location(platform):
     if platform == "SpeedChecker":
         collection = db.Speedcheckerasnlocation
         asn_location_helper(collection, SpeedChGlobalUniqueNodes)
-        
+
     elif platform == "CAIDA":
         collection = db.Caidaasnlocation
         asn_location_helper(collection, CaidaGlobalUniqueNodes)
@@ -257,6 +276,7 @@ def get_asn_location(platform):
     elif platform == "RIPE":
         collection = db.Ripeasnlocation
         asn_location_helper(collection, RipeGlobalUniqueNodes)
+
 
 def asn_location_helper(collection, uniqueNodes_arr):
     for item in uniqueNodes_arr:
@@ -274,7 +294,7 @@ def get_linked_asn(platform):
     # establing connection
     try:
         connect = MongoClient(connection)
-        #connect = MongoClient('mongodb://localhost:27017/')
+        # connect = MongoClient('mongodb://localhost:27017/')
         print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
@@ -356,7 +376,7 @@ def get_linked_asn(platform):
 
     elif platform == "CAIDA":
         collection = mydb["Caidalinkedasn"]
-        #collection.drop()
+        # collection.drop()
         mycol = mydb["Caidatraces"]
         paths_col = mydb["CaidaPaths"]
         sources = []
@@ -364,39 +384,39 @@ def get_linked_asn(platform):
         traces = []
         trace_path = []
         uniqueNodes = []  # list of all unique nodes
-        rtt_list = []     #Caida does not have RTT though
+        rtt_list = []  # Caida does not have RTT though
         destination = []
         sourceValid = False
         for x in mycol.find():
             if not sourceValid:
                 if 'source_address' in x:
                     sourceValid = False
-                    #the first document is a source address for the next hops till the next source
+                    # the first document is a source address for the next hops till the next source
                     source = [x['ASN'], x['City'], x['source_address']]
                 else:
                     source = [x['ASN'], x['City'], x['addr']]
 
-                #print(source)
+                # print(source)
 
                 # iterate through every element in the document's Tracert array checking set number
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
                     continue
 
-                #if the code gets here, source is valid
+                # if the code gets here, source is valid
                 sourceValid = True
 
             else:
-                #first check if we havent reached the end of the trace and need to move to the next
+                # first check if we havent reached the end of the trace and need to move to the next
                 if 'source_address' in x:
                     sourceValid = False
                     trace_path.append(source[:2])
-                    #print(trace_path)
+                    # print(trace_path)
                     # if len(trace_path)>1:
                     #     path_dict = {"Path": trace_path}
                     #     paths_col.insert_one(path_dict)
                     trace_path.clear()
-                    #reinitialize source
+                    # reinitialize source
                     source = [x['ASN'], x['City'], x['source_address']]
                     continue
 
@@ -406,12 +426,12 @@ def get_linked_asn(platform):
 
                 # at this point destination is now valid too
                 destination = [x['ASN'], x['City'], x['addr']]
-                #print(destination)
+                # print(destination)
                 # keep updating the destination variable until the ASN is different from source
                 if source[:2] == destination[:2]:
                     continue
 
-                #at this point we have distinct, valid source and destination
+                # at this point we have distinct, valid source and destination
                 sources.append(source)
                 targets.append(destination)
                 trace_path.append(source[:2])
@@ -419,7 +439,7 @@ def get_linked_asn(platform):
                 # to ensure first source node of iteration is not left out
                 not_found = True
                 if source not in uniqueNodes:
-                    #uniqueNodes.append(source)
+                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -432,7 +452,7 @@ def get_linked_asn(platform):
                 source = destination
                 # to ensure end destination nodes are not left out
                 if source not in uniqueNodes:
-                    #uniqueNodes.append(source)
+                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -448,7 +468,7 @@ def get_linked_asn(platform):
         # for node in uniqueNodes:
         #     f.write(str(node)+'\n')
         # f.close()
-        
+
         for i in range(len(sources)):
             my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
                        "Target_City": targets[i][1], "RTT": 0.0}
@@ -456,7 +476,7 @@ def get_linked_asn(platform):
 
     elif platform == "RIPE":
         collection = mydb["Ripelinkedasn"]
-        #collection.drop()
+        # collection.drop()
         mycol = mydb["Ripetraces"]
         paths_col = mydb["RipePaths"]
         sources = []
@@ -471,7 +491,7 @@ def get_linked_asn(platform):
             if not sourceValid:
                 if 'source_address' in x:
                     sourceValid = False
-                    #the first document is a source address for the next hops till the next source
+                    # the first document is a source address for the next hops till the next source
                     source = [x['ASN'], x['City'], x['source_address']]
                 else:
                     source = [x['ASN'], x['City'], x['result'][0]['from']]
@@ -481,20 +501,20 @@ def get_linked_asn(platform):
                 if source[0] == '' or source[1] == '' or source[1] is None:
                     continue
 
-                #if the code gets here, source is valid
+                # if the code gets here, source is valid
                 sourceValid = True
 
             else:
-                #first check if we havent reached the end of the trace and need to move to the next
+                # first check if we havent reached the end of the trace and need to move to the next
                 if 'source_address' in x:
                     sourceValid = False
                     trace_path.append(source[:2])
-                    #print(trace_path)
+                    # print(trace_path)
                     # if len(trace_path)>1:
                     #     path_dict = {"Path": trace_path}
                     #     paths_col.insert_one(path_dict)
                     trace_path.clear()
-                    #reinitialize source
+                    # reinitialize source
                     source = [x['ASN'], x['City'], x['source_address']]
                     continue
 
@@ -508,7 +528,7 @@ def get_linked_asn(platform):
                 if source[:2] == destination[:2]:
                     continue
 
-                #at this point we have distinct, valid source and destination
+                # at this point we have distinct, valid source and destination
                 trace_path.append(source[:2])
 
                 # append rtt to source and destination
@@ -523,7 +543,7 @@ def get_linked_asn(platform):
                 # to ensure first source node of iteration is not left out
                 not_found = True
                 if source not in uniqueNodes:
-                    #uniqueNodes.append(source)
+                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -536,7 +556,7 @@ def get_linked_asn(platform):
                 source = destination
                 # to ensure end destination nodes are not left out
                 if source not in uniqueNodes:
-                    #uniqueNodes.append(source)
+                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -544,7 +564,7 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
-            
+
         global RipeGlobalUniqueNodes
         RipeGlobalUniqueNodes = uniqueNodes
 
@@ -553,7 +573,7 @@ def get_linked_asn(platform):
         # for node in uniqueNodes:
         #     f.write(str(node)+'\n')
         # f.close()
-        
+
         for i in range(len(sources)):
             my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
                        "Target_City": targets[i][1], "RTT": rtt_list[i]}
@@ -561,7 +581,7 @@ def get_linked_asn(platform):
     connect.close()
 
 
-def drop_mongo_collection():
+def drop_mongo_collection(platform):
     # establing connection
     try:
         connect = MongoClient(connection)
@@ -571,24 +591,31 @@ def drop_mongo_collection():
         print("Could not connect to MongoDB")
 
     mydb = connect["tracerouteDB"]
-    mycol_1 = mydb["Speedcheckertraces"]
-    mycol_2 = mydb["Caidatraces"]
-    mycol_3 = mydb["Ripetraces"]
-    mycol_4 = mydb["Caidalinkedasn"]
-    mycol_5 = mydb["Ripelinkedasn"]
-    mycol_6 = mydb["Speedcheckerlinkedasn"]
-    mycol_7 = mydb["Speedcheckerasnlocation"]
-    mycol_8 = mydb["Ripeasnlocation"]
-    mycol_9 = mydb["Caidaasnlocation"]
-    mycol_1.drop()
-    mycol_2.drop()
-    mycol_3.drop()
-    mycol_4.drop()
-    mycol_5.drop()
-    mycol_6.drop()
-    mycol_7.drop()
-    mycol_8.drop()
-    mycol_9.drop()
+
+    if platform == "SpeedChecker":
+        mycol_1 = mydb["Speedcheckertraces"]
+        mycol_6 = mydb["Speedcheckerlinkedasn"]
+        mycol_7 = mydb["Speedcheckerasnlocation"]
+        mycol_1.drop()
+        mycol_6.drop()
+        mycol_7.drop()
+
+    elif platform == "CAIDA":
+        mycol_2 = mydb["Caidatraces"]
+        mycol_4 = mydb["Caidalinkedasn"]
+        mycol_9 = mydb["Caidaasnlocation"]
+        mycol_2.drop()
+        mycol_4.drop()
+        mycol_9.drop()
+
+    elif platform == "RIPE":
+        mycol_3 = mydb["Ripetraces"]
+        mycol_5 = mydb["Ripelinkedasn"]
+        mycol_8 = mydb["Ripeasnlocation"]
+        mycol_3.drop()
+        mycol_5.drop()
+        mycol_8.drop()
+
     connect.close()
 
 
@@ -660,7 +687,7 @@ def get_topology_data(platform):
     # establishing connection
     try:
         connect = MongoClient(connection)
-        #connect = MongoClient('mongodb://localhost:27017/')
+        # connect = MongoClient('mongodb://localhost:27017/')
         # print("Connected successfully!!!")
     except:
         print("Could not connect to MongoDB")
@@ -692,7 +719,7 @@ def get_topology_data(platform):
         linkdata.append(dat)
     data.append(linkdata)
 
-    #fetch the nodes data
+    # fetch the nodes data
     cursor = nodes.find()
     for record in cursor:
         dat = {"ASN": record['ASN'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
@@ -700,7 +727,7 @@ def get_topology_data(platform):
         nodedata.append(dat)
     data.append(nodedata)
 
-    #fetch city nodes data
+    # fetch city nodes data
     cursor = city_nodes.find()
     for record in cursor:
         dat = {"Longitude": record['Longitude'], "Latitude": record['Latitude'],
@@ -711,11 +738,12 @@ def get_topology_data(platform):
     return data
 
 # def main():
-#     upload_to_mongo("RIPE")
-#     delete_empty_traces("RIPE")
-#     get_linked_asn("RIPE")
-#     data = get_topology_data("RIPE")
-#     print(data)
-
+#
+#     # upload_to_mongo("RIPE")
+#     # delete_empty_traces("RIPE")
+#     # get_linked_asn("RIPE")
+#     # data = get_topology_data("RIPE")
+#     # print(data)
+#
 # if __name__ == '__main__':
 #     main()

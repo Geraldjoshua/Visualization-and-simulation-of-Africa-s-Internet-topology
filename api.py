@@ -68,6 +68,7 @@ def speed():
 def caida():
     # data array contains 2 arrays [linksarray object, nodesarray object]
     data = mo.get_topology_data("CAIDA")
+
     return render_template("/caida.html", error=False, data=data)
 
 
