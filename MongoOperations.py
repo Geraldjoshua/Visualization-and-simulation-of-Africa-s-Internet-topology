@@ -267,27 +267,36 @@ def get_asn_location(platform):
 
     if platform == "SpeedChecker":
         collection = db.Speedcheckerasnlocation
-        asn_location_helper(collection, SpeedChGlobalUniqueNodes)
+        #create collection for the city nodes for city level map
+        city_nodes = db.SpeedcheckerCityLocations
+        asn_location_helper(collection, city_nodes, SpeedChGlobalUniqueNodes)
 
     elif platform == "CAIDA":
         collection = db.Caidaasnlocation
-        asn_location_helper(collection, CaidaGlobalUniqueNodes)
+        #create collection for the city nodes for city level map
+        city_nodes = db.CaidaCityLocations
+        asn_location_helper(collection, city_nodes, CaidaGlobalUniqueNodes)
 
     elif platform == "RIPE":
         collection = db.Ripeasnlocation
-        asn_location_helper(collection, RipeGlobalUniqueNodes)
+        #create collection for the city nodes for city level map
+        city_nodes = db.RipeCityLocations
+        asn_location_helper(collection, city_nodes, RipeGlobalUniqueNodes)
 
 
-def asn_location_helper(collection, uniqueNodes_arr):
+def asn_location_helper(collection, city_collection, uniqueNodes_arr):
     for item in uniqueNodes_arr:
         if item is not None:
             node_name = item[0]
             node_city = item[1]
             city_lat, city_long = geolocate(city=node_city, ip=item[2])
+            city_dict = {"Latitude": city_lat, "Longitude": city_long,
+                           "City": str(node_city).rstrip('\r\n')}
             node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
             my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
                        "City": str(node_city).rstrip('\r\n')}
             collection.insert_one(my_dict)
+            city_collection.insert_one(city_dict)
 
 
 def get_linked_asn(platform):
@@ -388,58 +397,34 @@ def get_linked_asn(platform):
         destination = []
         sourceValid = False
         for x in mycol.find():
-            if not sourceValid:
-                if 'source_address' in x:
-                    sourceValid = False
-                    # the first document is a source address for the next hops till the next source
-                    source = [x['ASN'], x['City'], x['source_address']]
-                else:
-                    source = [x['ASN'], x['City'], x['addr']]
+            if len(x['Hops']) != 0:
+                source = [x['ASN'], x['City'], x['source_address']]
+            else:
+                continue
 
-                # print(source)
-
-                # iterate through every element in the document's Tracert array checking set number
+            # iterate through every element in the document's Tracert array checking set number
+            for a in x['Hops']:
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
-                    continue
-
-                # if the code gets here, source is valid
-                sourceValid = True
-
-            else:
-                # first check if we havent reached the end of the trace and need to move to the next
-                if 'source_address' in x:
-                    sourceValid = False
-                    trace_path.append(source[:2])
-                    # print(trace_path)
-                    # if len(trace_path)>1:
-                    #     path_dict = {"Path": trace_path}
-                    #     paths_col.insert_one(path_dict)
-                    trace_path.clear()
-                    # reinitialize source
-                    source = [x['ASN'], x['City'], x['source_address']]
+                    source = [a['ASN'], a['City'], a['addr']]
                     continue
 
                 # first check if ASN='' or City=''
-                if x['ASN'] == '' or x['City'] == '' or x['City'] is None:
+                if a['ASN'] == '' or a['City'] == '' or a['City'] is None:
                     continue
 
-                # at this point destination is now valid too
-                destination = [x['ASN'], x['City'], x['addr']]
-                # print(destination)
+                # destination is a list variable
+                destination = [a['ASN'], a['City'], a['addr']]
                 # keep updating the destination variable until the ASN is different from source
-                if source[:2] == destination[:2]:
+                if source == destination:
                     continue
 
-                # at this point we have distinct, valid source and destination
                 sources.append(source)
                 targets.append(destination)
-                trace_path.append(source[:2])
 
                 # to ensure first source node of iteration is not left out
                 not_found = True
                 if source not in uniqueNodes:
-                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -452,7 +437,6 @@ def get_linked_asn(platform):
                 source = destination
                 # to ensure end destination nodes are not left out
                 if source not in uniqueNodes:
-                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -488,54 +472,33 @@ def get_linked_asn(platform):
         destination = []
         sourceValid = False
         for x in mycol.find():
-            if not sourceValid:
-                if 'source_address' in x:
-                    sourceValid = False
-                    # the first document is a source address for the next hops till the next source
-                    source = [x['ASN'], x['City'], x['source_address']]
-                else:
-                    source = [x['ASN'], x['City'], x['result'][0]['from']]
+            if len(x['Hops']) != 0:
+                source = [x['ASN'], x['City'], x['source_address']]
+            else:
+                continue
 
-                # iterate through every element in the document's Tracert array checking set number
+            # iterate through every element in the document's Tracert array checking set number
+            for a in x['Hops']:
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
-                    continue
-
-                # if the code gets here, source is valid
-                sourceValid = True
-
-            else:
-                # first check if we havent reached the end of the trace and need to move to the next
-                if 'source_address' in x:
-                    sourceValid = False
-                    trace_path.append(source[:2])
-                    # print(trace_path)
-                    # if len(trace_path)>1:
-                    #     path_dict = {"Path": trace_path}
-                    #     paths_col.insert_one(path_dict)
-                    trace_path.clear()
-                    # reinitialize source
-                    source = [x['ASN'], x['City'], x['source_address']]
+                    source = [a['ASN'], a['City'], a['result'][0]['from']]
                     continue
 
                 # first check if ASN='' or City=''
-                if x['ASN'] == '' or x['City'] == '' or x['City'] is None:
+                if a['ASN'] == '' or a['City'] == '' or a['City'] is None:
                     continue
 
-                # at this point destination is now valid too
-                destination = [x['ASN'], x['City'], x['result'][0]['from']]
+                # destination is a list variable
+                destination = [a['ASN'], a['City'], a['result'][0]['from']]
                 # keep updating the destination variable until the ASN is different from source
-                if source[:2] == destination[:2]:
+                if source == destination:
                     continue
-
-                # at this point we have distinct, valid source and destination
-                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
-                for trace in x['result']:
-                    total += float(trace['rtt'])
-                avg_rtt = round(total / len(x['result']), 2)
+                for rtt in a['result']:
+                    total += float(rtt['rtt'])
+                avg_rtt = round(total / len(a['result']), 2)
                 sources.append(source)
                 targets.append(destination)
                 rtt_list.append(avg_rtt)
@@ -543,7 +506,6 @@ def get_linked_asn(platform):
                 # to ensure first source node of iteration is not left out
                 not_found = True
                 if source not in uniqueNodes:
-                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -556,7 +518,6 @@ def get_linked_asn(platform):
                 source = destination
                 # to ensure end destination nodes are not left out
                 if source not in uniqueNodes:
-                    # uniqueNodes.append(source)
                     for item in uniqueNodes:
                         if str(source[0]).strip() == str(item[0]).strip() and str(source[1]).strip() == str(
                                 item[1]).strip():
@@ -564,7 +525,6 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
-
         global RipeGlobalUniqueNodes
         RipeGlobalUniqueNodes = uniqueNodes
 
@@ -580,6 +540,30 @@ def get_linked_asn(platform):
             collection.insert_one(my_dict)
     connect.close()
 
+def drop_traces_collection(platform):
+    try:
+        connect = MongoClient(connection)
+
+        # print("Connected successfully!!!")
+    except:
+        print("Could not connect to MongoDB")
+
+    mydb = connect["tracerouteDB"]
+
+    if platform == "SpeedChecker":
+        mycol_1 = mydb["Speedcheckertraces"]
+        mycol_1.drop()
+
+    elif platform == "CAIDA":
+        mycol_2 = mydb["Caidatraces"]
+        mycol_2.drop()
+
+    elif platform == "RIPE":
+        mycol_3 = mydb["Ripetraces"]
+        mycol_3.drop()
+
+    connect.close()
+
 
 def drop_mongo_collection(platform):
     # establing connection
@@ -593,28 +577,28 @@ def drop_mongo_collection(platform):
     mydb = connect["tracerouteDB"]
 
     if platform == "SpeedChecker":
-        mycol_1 = mydb["Speedcheckertraces"]
         mycol_6 = mydb["Speedcheckerlinkedasn"]
         mycol_7 = mydb["Speedcheckerasnlocation"]
-        mycol_1.drop()
+        mycol_10 = mydb["SpeedcheckerCityLocations"]
         mycol_6.drop()
         mycol_7.drop()
+        mycol_10.drop()
 
     elif platform == "CAIDA":
-        mycol_2 = mydb["Caidatraces"]
         mycol_4 = mydb["Caidalinkedasn"]
         mycol_9 = mydb["Caidaasnlocation"]
-        mycol_2.drop()
+        mycol_11 = mydb["CaidaCityLocations"]
         mycol_4.drop()
         mycol_9.drop()
+        mycol_11.drop()
 
     elif platform == "RIPE":
-        mycol_3 = mydb["Ripetraces"]
         mycol_5 = mydb["Ripelinkedasn"]
         mycol_8 = mydb["Ripeasnlocation"]
-        mycol_3.drop()
+        mycol_12 = mydb["RipeCityLocations"]
         mycol_5.drop()
         mycol_8.drop()
+        mycol_12.drop()
 
     connect.close()
 
@@ -737,13 +721,39 @@ def get_topology_data(platform):
     connect.close()
     return data
 
+def regenerate_links(platform):
+    if platform=="SpeedChecker":
+        print("Dropping for SpeedChecker...")
+        drop_mongo_collection("SpeedChecker")
+        print("getting linked asn for SpeedChecker...")
+        get_linked_asn("SpeedChecker")
+        print("done. getting asn locations for SpeedChecker")
+        get_asn_location("SpeedChecker")
+    elif platform == "CAIDA":
+        print("Dropping for CAIDA...")
+        drop_mongo_collection("CAIDA")
+        print("getting linked asn for CAIDA...")
+        get_linked_asn("CAIDA")
+        print("done. getting asn locations for CAIDA")
+        get_asn_location("CAIDA")
+    elif platform == "RIPE":
+        print("Dropping for RIPE...")
+        drop_mongo_collection("RIPE")
+        print("getting linked asn for RIPE...")
+        get_linked_asn("RIPE")
+        print("done. getting asn locations for RIPE")
+        get_asn_location("RIPE")
+
 # def main():
-#
+#     # drop_mongo_collection("SpeedChecker")
+#     # drop_mongo_collection("CAIDA")
+#     # drop_mongo_collection("RIPE")
 #     # upload_to_mongo("RIPE")
 #     # delete_empty_traces("RIPE")
-#     # get_linked_asn("RIPE")
-#     # data = get_topology_data("RIPE")
-#     # print(data)
-#
+#     regenerate_links("CAIDA")
+#     regenerate_links("RIPE")
+#     # data = get_topology_data("SpeedChecker")
+#     # print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
+
 # if __name__ == '__main__':
 #     main()
