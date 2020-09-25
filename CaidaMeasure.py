@@ -8,7 +8,7 @@ import MongoOperations as mo
 """
 get all active probes in Africa
 """
-api_key = "ef6c77cf438ca8353f5a266498f4785b"
+api_key = ""
 g_base_url = "https://vela.caida.org/api"
 g_timeout = 120  # default timeout
 ping_test_id = []
