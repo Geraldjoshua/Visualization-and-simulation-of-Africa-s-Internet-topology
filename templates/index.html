@@ -117,6 +117,7 @@
                     </div>
                     <div class="btn-group">
                         <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
+                        <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
                     </div>
 
 
@@ -124,7 +125,7 @@
             </ul>
         </nav>
         <div class="container-fluid" id="tooltip">
-            <div id="map" style="width:100%;height:500px;"></div>
+            <div id="map" style="width:100%;height:700px;"></div>
         </div>
     </div>
     <!-- /#page-content-wrapper -->
@@ -147,10 +148,13 @@
     });
 
     class Node {
-        constructor(asn_number, city, pos) {
+        asn_number;
+        paths;
+        constructor(asn_number, city, pos, paths) {
             this.asn_number = asn_number;
             this.city = city;
             this.pos = pos;
+            this.paths = paths;
         }
     }
 
@@ -172,7 +176,8 @@
 
     var k;
 
-    var nodes_red = []; //Nodes Array
+    let pop_nodes = []; //Nodes Array
+    var city_nodes = [];
     let city_markers = [];
     let pop_markers = [];
     let city_links = [];
@@ -196,19 +201,68 @@
 
     }
 
-    function makeMarker(position, name, color){
-      var marker = new google.maps.Marker({
-          position: position,
-          sName: name,
-          map: map,
-          icon: {
+    function returnPopup(asn, city){
+      const contentString = 
+          '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
+      const infowindow = new google.maps.InfoWindow({
+        content: contentString
+      });
+      return infowindow;
+    }
+
+    function drawPaths(paths){
+      var source; var destinaton;
+      for(var i=0; i<paths.length; i++){
+        source = searchNode(paths[i][0][0], paths[i][0][1]);
+        for(var j=1; j<paths[i].length; j++){
+          //search for the particular node in the path in the data array
+          destinaton = searchNode(paths[i][j][0], paths[i][j][1]);
+          var flightPlanCoordinates = [source,destinaton];
+          makePolyline(flightPlanCoordinates, "#3a00cc");
+          source = destinaton; //exchange source and destination 
+        }
+      }
+    }
+
+    function searchNode(asn, city){
+      for(var i=0; i<data.length; i++){
+        //search for the particular node in the path in the data array
+        if(asn==parseInt(data[i]['ASN']) && city==data[i]['City']){
+          return {lat: parseFloat(data[i]['Latitude']), lng: parseFloat(data[i]['Longitude'])};
+        }
+      }
+    }
+
+    function makeMarker(position, asn, city, color, isSource, paths){
+      if(isSource){
+        icon = {
+              path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+              scale: 4.0,
+          }
+      }else{
+        icon = {
               path: google.maps.SymbolPath.CIRCLE,
               scale: 2.5,
               fillColor: color,
               fillOpacity: 0.4,
               strokeWeight: 0.4
-          },
+          }
+      }
+
+      var marker = new google.maps.Marker({
+          position: position,
+          sName: asn,
+          map: map,
+          icon: icon,
       });
+
+      if(isSource){
+        marker.addListener("click", () => {
+          info_wind = returnPopup(asn, city);
+          info_wind.open(map, marker);
+          drawPaths(paths);
+        });       
+      }
       return marker;
       //markers.push(marker);
     }
@@ -237,10 +291,11 @@
                 var  asnnumber = data[b].ASN;
                 var city = data[b].City;
                 city = city.replace('\n', '')
+                var paths = data[b].Paths;
                 var ip = "111.111.111.0" //data[b].IP
-                var newnode = new Node(asnnumber, city, latLng);
-                nodes_red.push(newnode);
-                marker = makeMarker(latLng, data[b].ASN, "#F00");
+                var newnode = new Node(asnnumber, city, latLng, paths);
+                pop_nodes.push(newnode);
+                marker = makeMarker(latLng, data[b].ASN, city, "#F00", paths.length, paths);
                 pop_markers.push(marker);
           }
           var p;
@@ -250,14 +305,14 @@
                var target;
                var j;
 
-               for(j=0; j<nodes_red.length;j++){
-                    if(datalinks[p].Source_ASN == nodes_red[j].asn_number && datalinks[p].Source_City == nodes_red[j].city){
+               for(j=0; j<pop_nodes.length;j++){
+                    if(datalinks[p].Source_ASN == pop_nodes[j].asn_number && datalinks[p].Source_City == pop_nodes[j].city){
                       //console.log("here now");
-                      source = nodes_red[j].pos;
+                      source = pop_nodes[j].pos;
                     }
 
-                    if(datalinks[p].Target_ASN == nodes_red[j].asn_number && datalinks[p].Target_City == nodes_red[j].city){
-                      target = nodes_red[j].pos;
+                    if(datalinks[p].Target_ASN == pop_nodes[j].asn_number && datalinks[p].Target_City == pop_nodes[j].city){
+                      target = pop_nodes[j].pos;
                     }
                }
 
@@ -284,8 +339,8 @@
                 var city = data[b].City;
                 city = city.replace('\n', '')
                 var newnode = new CityNode(city, [12, 23], latLng);
-                nodes_red.push(newnode);
-                marker = makeMarker(latLng, data[b].ASN, "#3a00cc");
+                city_nodes.push(newnode);
+                marker = makeMarker(latLng, data[b].ASN, city, "#3a00cc", false);
                 city_markers.push(marker);
           }
           var p;
@@ -295,14 +350,14 @@
                var target;
                var j;
 
-               for(j=0; j<nodes_red.length;j++){
-                    if( datalinks[p].Source_City == nodes_red[j].city){
+               for(j=0; j<city_nodes.length;j++){
+                    if( datalinks[p].Source_City == city_nodes[j].city){
                       //console.log("here now");
-                      source = nodes_red[j].pos;
+                      source = city_nodes[j].pos;
                     }
 
-                    if(datalinks[p].Target_City == nodes_red[j].city){
-                      target = nodes_red[j].pos;
+                    if(datalinks[p].Target_City == city_nodes[j].city){
+                      target = city_nodes[j].pos;
                     }
 
                }
@@ -390,6 +445,31 @@
           icons[0].offset = (count / 2) + '%';
           line.set('icons', icons);
         }, 20);
+    }
+
+    document.getElementById("menu-routes").addEventListener("click", viewRoutes);
+    var image = 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png';
+    var icon = {
+      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+      scale: 4.0
+    };
+
+    function viewRoutes() {
+      //go through all the pop nodes and replace all those with paths with markers
+      var node; var city; var paths; var asn_number;
+      for (var i = 0; i <= pop_nodes.length; i++) {
+        node = pop_nodes[i];
+        city = node.city;
+        paths = node.paths;
+        asn_number = node.asn_number;
+        if(paths.length!=0){
+          pop_markers[i].setIcon(icon);
+          pop_markers[i].addListener("click", ()=>{
+            info_wind = returnPopup(asn_number, city);
+            info_wind.open(map, pop_markers[i]);
+          });
+        }
+      }
     }
 
 

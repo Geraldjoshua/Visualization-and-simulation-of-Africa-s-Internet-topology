@@ -13,6 +13,9 @@ geolocator = Nominatim(user_agent="city_geoloc")
 SpeedChGlobalUniqueNodes = []
 CaidaGlobalUniqueNodes = []
 RipeGlobalUniqueNodes = []
+SpeedChPaths = []
+CaidaPaths = []
+RipePaths = []
 connection = "mongodb+srv://willie:admin123@testing.ac8uu.mongodb.net/test?retryWrites=true&w=majority"
 
 
@@ -269,7 +272,9 @@ def get_asn_location(platform):
         collection = db.Speedcheckerasnlocation
         #create collection for the city nodes for city level map
         city_nodes = db.SpeedcheckerCityLocations
-        asn_location_helper(collection, city_nodes, SpeedChGlobalUniqueNodes)
+        paths_col = db.SpeedcheckerPaths
+        paths = list(paths_col.find({}, {"_id":0}))
+        asn_location_helper(collection, city_nodes, SpeedChGlobalUniqueNodes, paths)
 
     elif platform == "CAIDA":
         collection = db.Caidaasnlocation
@@ -284,17 +289,22 @@ def get_asn_location(platform):
         asn_location_helper(collection, city_nodes, RipeGlobalUniqueNodes)
 
 
-def asn_location_helper(collection, city_collection, uniqueNodes_arr):
+def asn_location_helper(collection, city_collection, uniqueNodes_arr, paths_arr):
     for item in uniqueNodes_arr:
         if item is not None:
             node_name = item[0]
             node_city = item[1]
+            path = []
             city_lat, city_long = geolocate(city=node_city, ip=item[2])
             city_dict = {"Latitude": city_lat, "Longitude": city_long,
                            "City": str(node_city).rstrip('\r\n')}
+            for pth in paths_arr:   #paths_arr is a list of dictionaries {'Path': [[asn, city], [asn2, city2]]}
+                if pth['Path'][0][0]==node_name and pth['Path'][0][1]==node_city:
+                    #print(pth['Path'])
+                    path.append(pth['Path'])
             node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
             my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
-                       "City": str(node_city).rstrip('\r\n')}
+                       "City": str(node_city).rstrip('\r\n'), "Path": path}
             collection.insert_one(my_dict)
             city_collection.insert_one(city_dict)
 
@@ -314,8 +324,11 @@ def get_linked_asn(platform):
     if platform == "SpeedChecker":
         collection = mydb["Speedcheckerlinkedasn"]
         mycol = mydb["Speedcheckertraces"]
+        paths_col = mydb["SpeedcheckerPaths"]
         sources = []
         targets = []
+        trace_path = []
+        paths = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []
         for x in mycol.find():
@@ -338,8 +351,11 @@ def get_linked_asn(platform):
                 # destination is a list variable
                 destination = [a['ASN'], a['City'], a['IP']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
+
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
@@ -376,6 +392,19 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            #print(trace_path)
+            if len(trace_path)>1:
+                path_dict = {"Path": trace_path}
+                paths_col.insert_one(path_dict)
+            trace_path.clear()
+        # f = open("SpeedChPaths.txt", 'w', encoding="utf-8")
+        # print("writing...")
+        # for path in paths:
+        #     f.write(str(path)+'\n')
+        # f.close()
+        # global SpeedChPaths
+        # SpeedChPaths = paths
         global SpeedChGlobalUniqueNodes
         SpeedChGlobalUniqueNodes = uniqueNodes
         for i in range(len(sources)):
@@ -390,7 +419,6 @@ def get_linked_asn(platform):
         paths_col = mydb["CaidaPaths"]
         sources = []
         targets = []
-        traces = []
         trace_path = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []  # Caida does not have RTT though
@@ -416,9 +444,11 @@ def get_linked_asn(platform):
                 # destination is a list variable
                 destination = [a['ASN'], a['City'], a['addr']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
 
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
                 sources.append(source)
                 targets.append(destination)
 
@@ -444,6 +474,9 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            print(trace_path)
+            trace_path.clear()
         global CaidaGlobalUniqueNodes
         CaidaGlobalUniqueNodes = uniqueNodes
 
@@ -453,10 +486,10 @@ def get_linked_asn(platform):
         #     f.write(str(node)+'\n')
         # f.close()
 
-        for i in range(len(sources)):
-            my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
-                       "Target_City": targets[i][1], "RTT": 0.0}
-            collection.insert_one(my_dict)
+        # for i in range(len(sources)):
+        #     my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
+        #                "Target_City": targets[i][1], "RTT": 0.0}
+        #     collection.insert_one(my_dict)
 
     elif platform == "RIPE":
         collection = mydb["Ripelinkedasn"]
@@ -465,7 +498,6 @@ def get_linked_asn(platform):
         paths_col = mydb["RipePaths"]
         sources = []
         targets = []
-        traces = []
         trace_path = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []
@@ -491,8 +523,11 @@ def get_linked_asn(platform):
                 # destination is a list variable
                 destination = [a['ASN'], a['City'], a['result'][0]['from']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
+
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
@@ -525,6 +560,10 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            print(trace_path)
+            trace_path.clear()
+
         global RipeGlobalUniqueNodes
         RipeGlobalUniqueNodes = uniqueNodes
 
@@ -534,10 +573,10 @@ def get_linked_asn(platform):
         #     f.write(str(node)+'\n')
         # f.close()
 
-        for i in range(len(sources)):
-            my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
-                       "Target_City": targets[i][1], "RTT": rtt_list[i]}
-            collection.insert_one(my_dict)
+        # for i in range(len(sources)):
+        #     my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
+        #                "Target_City": targets[i][1], "RTT": rtt_list[i]}
+        #     collection.insert_one(my_dict)
     connect.close()
 
 def drop_traces_collection(platform):
@@ -580,9 +619,11 @@ def drop_mongo_collection(platform):
         mycol_6 = mydb["Speedcheckerlinkedasn"]
         mycol_7 = mydb["Speedcheckerasnlocation"]
         mycol_10 = mydb["SpeedcheckerCityLocations"]
+        mycol_13 = mydb["SpeedcheckerPaths"]
         mycol_6.drop()
         mycol_7.drop()
         mycol_10.drop()
+        mycol_13.drop()
 
     elif platform == "CAIDA":
         mycol_4 = mydb["Caidalinkedasn"]
@@ -707,7 +748,7 @@ def get_topology_data(platform):
     cursor = nodes.find()
     for record in cursor:
         dat = {"ASN": record['ASN'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
-               "City": record['City']}
+               "City": record['City'], "Paths": record['Path']}
         nodedata.append(dat)
     data.append(nodedata)
 
@@ -746,12 +787,13 @@ def regenerate_links(platform):
 
 # def main():
 #     # drop_mongo_collection("SpeedChecker")
-#     # drop_mongo_collection("CAIDA")
-#     # drop_mongo_collection("RIPE")
+#     # get_linked_asn("SpeedChecker")
+#     # print("getting paths")
+#     # get_asn_location("SpeedChecker")
 #     # upload_to_mongo("RIPE")
 #     # delete_empty_traces("RIPE")
-#     regenerate_links("CAIDA")
-#     regenerate_links("RIPE")
+#     # regenerate_links("CAIDA")
+#     # regenerate_links("RIPE")
 #     # data = get_topology_data("SpeedChecker")
 #     # print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
 
