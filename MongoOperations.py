@@ -290,14 +290,21 @@ def get_asn_location(platform):
 
 
 def asn_location_helper(collection, city_collection, uniqueNodes_arr, paths_arr):
+    cities = []
     for item in uniqueNodes_arr:
         if item is not None:
             node_name = item[0]
             node_city = item[1]
             path = []
             city_lat, city_long = geolocate(city=node_city, ip=item[2])
-            city_dict = {"Latitude": city_lat, "Longitude": city_long,
+
+            #if the city isnt covered already
+            if node_city not in cities:
+                city_dict = {"Latitude": city_lat, "Longitude": city_long,
                            "City": str(node_city).rstrip('\r\n')}
+                cities.append(node_city)
+                city_collection.insert_one(city_dict)
+
             for pth in paths_arr:   #paths_arr is a list of dictionaries {'Path': [[asn, city], [asn2, city2]]}
                 if pth['Path'][0][0]==node_name and pth['Path'][0][1]==node_city:
                     #print(pth['Path'])
@@ -306,7 +313,7 @@ def asn_location_helper(collection, city_collection, uniqueNodes_arr, paths_arr)
             my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
                        "City": str(node_city).rstrip('\r\n'), "Path": path}
             collection.insert_one(my_dict)
-            city_collection.insert_one(city_dict)
+            
 
 
 def get_linked_asn(platform):

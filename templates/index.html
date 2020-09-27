@@ -95,6 +95,9 @@
       stroke-linecap: round;
       pointer-events: none;
       }
+      #citySelection, #asnSelection {
+        display: none;
+      }
     </style>
 </head>
 <body>
@@ -118,6 +121,20 @@
                     <div class="btn-group">
                         <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
                         <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
+                    </div>
+                    <div display="inline" id="citySelection">
+                      <label for="citySelect">Select source city:</label>
+
+                      <select name="citySelect" id="citySelect">
+                        
+                      </select>
+                    </div>
+                    <div display="inline" id="asnSelection">
+                      <label for="asnSelect">Select source ASN:</label>
+
+                      <select name="asnSelect" id="asnSelect">
+                        <option value="" selected disabled hidden>ASN</option>
+                      </select>
                     </div>
 
 
@@ -182,6 +199,7 @@
     let pop_markers = [];
     let city_links = [];
     let pop_links = [];
+    let viewed_routes = [];
 
     // window.onload = ready(data,datalinks);
     // function ready(data,datalinks) {
@@ -211,14 +229,15 @@
     }
 
     function drawPaths(paths){
-      var source; var destinaton;
+      var source; var destinaton; var line;
       for(var i=0; i<paths.length; i++){
         source = searchNode(paths[i][0][0], paths[i][0][1]);
         for(var j=1; j<paths[i].length; j++){
           //search for the particular node in the path in the data array
           destinaton = searchNode(paths[i][j][0], paths[i][j][1]);
           var flightPlanCoordinates = [source,destinaton];
-          makePolyline(flightPlanCoordinates, "#3a00cc");
+          line = makePolyline(flightPlanCoordinates, "#3a00cc", 2);
+          viewed_routes.push(line);
           source = destinaton; //exchange source and destination 
         }
       }
@@ -267,13 +286,13 @@
       //markers.push(marker);
     }
 
-    function makePolyline(flightPlanCoordinates, color){
+    function makePolyline(flightPlanCoordinates, color, lineWeight=1){
       var flightPath = new google.maps.Polyline({
         path: flightPlanCoordinates,
         geodesic: true,
         strokeColor: color,
         strokeOpacity: 1.0,
-        strokeWeight: 1
+        strokeWeight: lineWeight
       });
       //links.push(flightPath);
       flightPath.setMap(map);
@@ -294,6 +313,9 @@
                 var paths = data[b].Paths;
                 var ip = "111.111.111.0" //data[b].IP
                 var newnode = new Node(asnnumber, city, latLng, paths);
+                if(paths.length>0){
+                  //search for the 
+                }
                 pop_nodes.push(newnode);
                 marker = makeMarker(latLng, data[b].ASN, city, "#F00", paths.length, paths);
                 pop_markers.push(marker);
@@ -387,15 +409,9 @@
     }
 
     // Sets the map on all links in the array.
-    function setMapOnLinks(map=null, nodeType) {
-      if(nodeType=="City"){
-        for (let i = 0; i < city_links.length; i++) {
-          city_links[i].setMap(map);
-        }
-      }else{
-        for (let i = 0; i < pop_links.length; i++) {
-          pop_links[i].setMap(map);
-        }
+    function setMapOnLinks(map=null, nodeType, links_list) {
+      for (let i = 0; i < links_list.length; i++) {
+          links_list[i].setMap(map);
       }
     }
 
@@ -405,8 +421,8 @@
     }
 
     // Removes the links from the map, but keeps them in the array.
-    function clearLinks(nodeType) {
-      setMapOnLinks(null, nodeType);
+    function clearLinks(nodeType, links_list) {
+      setMapOnLinks(null, nodeType, links_list);
     }
 
     var infowindow = new google.maps.InfoWindow({
@@ -419,20 +435,20 @@
       infowindow.setContent('Zoom: ' + map.getZoom());
       if(map.getZoom()>=6){
         clearMarkers("City");
-        clearLinks("City");
+        clearLinks("City", city_links);
         if(pop_links.length==0){
           //means the POP map has not been drawn yet
           ready_pop(data, datalinks);
         } else {
           setMapOnAll(map, "POP");
-          setMapOnLinks(map, "POP");
+          setMapOnLinks(map, "POP", pop_links);
         }
         //load the PoP level map  
       } else{
         clearMarkers("POP");
-        clearLinks("POP");
+        clearLinks("POP", pop_links);
         setMapOnAll(map, "City");
-        setMapOnLinks(map, "City");
+        setMapOnLinks(map, "City", city_links);
       }
     });
 
@@ -447,29 +463,65 @@
         }, 20);
     }
 
+    var cityLinksCleared = false;
     document.getElementById("menu-routes").addEventListener("click", viewRoutes);
-    var image = 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png';
-    var icon = {
-      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-      scale: 4.0
-    };
+    //set the dropdown list options as all the cities available
+    for(var i=0; i<data.length; i++){
+      if(data[i]['Paths'].length>0){
+        var city = data[i]['City'];
+        var option = document.createElement("option");
+        option.text = city;
+        document.getElementById("citySelect").add(option);
+      }
+    }
 
-    function viewRoutes() {
-      //go through all the pop nodes and replace all those with paths with markers
-      var node; var city; var paths; var asn_number;
-      for (var i = 0; i <= pop_nodes.length; i++) {
-        node = pop_nodes[i];
-        city = node.city;
-        paths = node.paths;
-        asn_number = node.asn_number;
-        if(paths.length!=0){
-          pop_markers[i].setIcon(icon);
-          pop_markers[i].addListener("click", ()=>{
-            info_wind = returnPopup(asn_number, city);
-            info_wind.open(map, pop_markers[i]);
-          });
+    //respond to changes in the city select drop down
+    var asn; var city;
+    document.getElementById("citySelect").addEventListener("change", ()=>{
+      x = document.getElementById("citySelect");
+      document.getElementById('asnSelect').innerText = null;
+      document.getElementById("asnSelection").style.display = "inline";
+      //get all asns that are in that city
+      city = x.value;
+      for(var i=0; i<data.length; i++){
+        if(city==data[i]['City'] && data[i]['Paths'].length>0){
+          asn = data[i]['ASN'];
+          var option = document.createElement("option");
+          option.text = asn;
+          document.getElementById("asnSelect").add(option);
         }
       }
+    })
+
+    //respond to changes in the asn select drop down
+    document.getElementById("asnSelect").addEventListener("change", ()=>{
+      x = document.getElementById("asnSelect");
+      //look for the specific node with that asn and city
+      for(var i=0; i<pop_nodes.length; i++){
+        if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
+          drawPaths(pop_nodes[i].paths);
+        }
+      }
+    })
+
+    //respond to the view routes button being toggled
+
+    function viewRoutes() {
+      var dropdown = document.getElementById("citySelection");
+      if(cityLinksCleared==false){
+        clearLinks("City", city_links);
+        document.getElementById("menu-routes").innerHTML = "Exit View Routes";
+        dropdown.style.display = "inline";
+        cityLinksCleared = true;
+      }else{
+        setMapOnLinks(map, "City", city_links);
+        document.getElementById("menu-routes").innerHTML = "View Routes";
+        dropdown.style.display = "none";
+        document.getElementById("asnSelection").style.display = "none";
+        cityLinksCleared = false;
+        clearLinks("City", viewed_routes);
+      }
+      
     }
 
 
