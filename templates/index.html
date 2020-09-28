@@ -200,6 +200,7 @@
     let city_links = [];
     let pop_links = [];
     let viewed_routes = [];
+    let infoWindows = [];
 
     // window.onload = ready(data,datalinks);
     // function ready(data,datalinks) {
@@ -219,13 +220,22 @@
 
     }
 
-    function returnPopup(asn, city){
+    function returnPopup(asn, city, latLng=null){
       const contentString = 
           '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
-      const infowindow = new google.maps.InfoWindow({
-        content: contentString
-      });
-      return infowindow;
+      if(latLng==null){
+        const infowindow = new google.maps.InfoWindow({
+          content: contentString
+        });
+        return infowindow;
+      }else{
+        const infowindow = new google.maps.InfoWindow({
+          content: contentString,
+          position: latLng
+        });
+        return infowindow;
+      }
+      
     }
 
     function drawPaths(paths, nodeType){
@@ -235,6 +245,9 @@
         for(var j=1; j<paths[i].length; j++){
           //search for the particular node in the path in the data array
           destinaton = searchNode(paths[i][j][0], paths[i][j][1], nodeType);
+          var info_wind = returnPopup(paths[i][j][0], paths[i][j][1], destinaton);
+          info_wind.open(map);
+          infoWindows.push(info_wind);
           var flightPlanCoordinates = [source,destinaton];
           line = makePolyline(flightPlanCoordinates, "#3a00cc", 1);
           viewed_routes.push(line);
@@ -250,7 +263,6 @@
           if(city==city_data[i]['City']){
             //do a sneaky thing and change the marker icon in here too
             city_markers[i].setIcon(null);
-            returnPopup(asn, city).open(map, city_markers[i]);
             return {lat: parseFloat(city_data[i]['Latitude']), lng: parseFloat(city_data[i]['Longitude'])};
           }
         }
@@ -516,6 +528,7 @@
       x = document.getElementById("asnSelect");
       info_wind = returnPopup(x.value, city);
       info_wind.open(map, sourceMarker);
+      infoWindows.push(info_wind);
       //look for the specific node with that asn and city
       for(var i=0; i<pop_nodes.length; i++){
         if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
@@ -543,6 +556,8 @@
         cityLinksCleared = false;
         inViewRoutes = false;
         city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
         clearLinks("City", viewed_routes);
       }
       
@@ -555,7 +570,7 @@
           //change the corresponding marker's icon
           city_markers[i].setIcon(null);
           map.setCenter(city_markers[i].getPosition());
-          city_markers[i].setLabel(1);
+          city_markers[i].setLabel("1");
           return city_markers[i];
         }
       }
@@ -571,6 +586,11 @@
           strokeWeight: 0.4
       }
       marker.setIcon(icon);
+    }
+
+    //function to close an info window
+    function closeWindow(infowindow){
+      infowindow.close();
     }
 
 
