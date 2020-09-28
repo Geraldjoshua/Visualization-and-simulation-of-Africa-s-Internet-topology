@@ -228,36 +228,45 @@
       return infowindow;
     }
 
-    function drawPaths(paths){
+    function drawPaths(paths, nodeType){
       var source; var destinaton; var line;
       for(var i=0; i<paths.length; i++){
-        source = searchNode(paths[i][0][0], paths[i][0][1]);
+        source = searchNode(paths[i][0][0], paths[i][0][1], nodeType);
         for(var j=1; j<paths[i].length; j++){
           //search for the particular node in the path in the data array
-          destinaton = searchNode(paths[i][j][0], paths[i][j][1]);
+          destinaton = searchNode(paths[i][j][0], paths[i][j][1], nodeType);
           var flightPlanCoordinates = [source,destinaton];
-          line = makePolyline(flightPlanCoordinates, "#3a00cc", 2);
+          line = makePolyline(flightPlanCoordinates, "#3a00cc", 1);
           viewed_routes.push(line);
           source = destinaton; //exchange source and destination 
         }
       }
     }
 
-    function searchNode(asn, city){
-      for(var i=0; i<data.length; i++){
-        //search for the particular node in the path in the data array
-        if(asn==parseInt(data[i]['ASN']) && city==data[i]['City']){
-          return {lat: parseFloat(data[i]['Latitude']), lng: parseFloat(data[i]['Longitude'])};
+    function searchNode(asn, city, nodeType){
+      if(nodeType=="City"){
+        for(var i=0; i<city_data.length; i++){
+          //search for the particular city node in the path in the data array
+          if(city==city_data[i]['City']){
+            //do a sneaky thing and change the marker icon in here too
+            city_markers[i].setIcon(null);
+            returnPopup(asn, city).open(map, city_markers[i]);
+            return {lat: parseFloat(city_data[i]['Latitude']), lng: parseFloat(city_data[i]['Longitude'])};
+          }
+        }
+      }else{
+        for(var i=0; i<data.length; i++){
+          //search for the particular city node in the path in the data array
+          if(asn==parseInt(data[i]['ASN']) && city==data[i]['City']){
+            return {lat: parseFloat(data[i]['Latitude']), lng: parseFloat(data[i]['Longitude'])};
+          }
         }
       }
     }
 
     function makeMarker(position, asn, city, color, isSource, paths){
       if(isSource){
-        icon = {
-              path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-              scale: 4.0,
-          }
+        icon = null
       }else{
         icon = {
               path: google.maps.SymbolPath.CIRCLE,
@@ -279,7 +288,7 @@
         marker.addListener("click", () => {
           info_wind = returnPopup(asn, city);
           info_wind.open(map, marker);
-          drawPaths(paths);
+          drawPaths(paths, "POP");
         });       
       }
       return marker;
@@ -433,23 +442,26 @@
 
     map.addListener('zoom_changed', function() {
       infowindow.setContent('Zoom: ' + map.getZoom());
-      if(map.getZoom()>=6){
-        clearMarkers("City");
-        clearLinks("City", city_links);
-        if(pop_links.length==0){
-          //means the POP map has not been drawn yet
-          ready_pop(data, datalinks);
-        } else {
-          setMapOnAll(map, "POP");
-          setMapOnLinks(map, "POP", pop_links);
+      if(!inViewRoutes){    //only re-render when view routes mode is off
+        if(map.getZoom()>=6){
+          clearMarkers("City");
+          clearLinks("City", city_links);
+          if(pop_links.length==0){
+            //means the POP map has not been drawn yet
+            ready_pop(data, datalinks);
+          } else {
+            setMapOnAll(map, "POP");
+            setMapOnLinks(map, "POP", pop_links);
+          }
+          //load the PoP level map  
+        } else{
+          clearMarkers("POP");
+          clearLinks("POP", pop_links);
+          setMapOnAll(map, "City");
+          setMapOnLinks(map, "City", city_links);
         }
-        //load the PoP level map  
-      } else{
-        clearMarkers("POP");
-        clearLinks("POP", pop_links);
-        setMapOnAll(map, "City");
-        setMapOnLinks(map, "City", city_links);
       }
+        
     });
 
     function animateCircle(line) {
@@ -463,6 +475,7 @@
         }, 20);
     }
 
+    //create the dropdown for the cities with source ASN's
     var cityLinksCleared = false;
     document.getElementById("menu-routes").addEventListener("click", viewRoutes);
     //set the dropdown list options as all the cities available
@@ -475,37 +488,44 @@
       }
     }
 
-    //respond to changes in the city select drop down
-    var asn; var city;
+    //respond to changes in the city select drop down by creating the ASN dropdown
+    var asn; var city; var sourceMarker;
     document.getElementById("citySelect").addEventListener("change", ()=>{
       x = document.getElementById("citySelect");
       document.getElementById('asnSelect').innerText = null;
       document.getElementById("asnSelection").style.display = "inline";
-      //get all asns that are in that city
+      //get all asns that are in that city and add them to the ASN dropdown
       city = x.value;
+      sourceMarker = changeMarker(city);   //change the marker of the source city
+      var option  = document.createElement("option");   //create the default option in the dropdown
+      option.text = "ASN";
+      option.setAttribute("selected", "selected");
+      document.getElementById("asnSelect").add(option);
       for(var i=0; i<data.length; i++){
         if(city==data[i]['City'] && data[i]['Paths'].length>0){
           asn = data[i]['ASN'];
-          var option = document.createElement("option");
+          option = document.createElement("option");
           option.text = asn;
           document.getElementById("asnSelect").add(option);
         }
       }
     })
 
-    //respond to changes in the asn select drop down
+    //respond to changes in the asn select drop down by drawing the paths
     document.getElementById("asnSelect").addEventListener("change", ()=>{
       x = document.getElementById("asnSelect");
+      info_wind = returnPopup(x.value, city);
+      info_wind.open(map, sourceMarker);
       //look for the specific node with that asn and city
       for(var i=0; i<pop_nodes.length; i++){
         if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
-          drawPaths(pop_nodes[i].paths);
+          drawPaths(pop_nodes[i].paths, "City");
         }
       }
     })
 
     //respond to the view routes button being toggled
-
+    var inViewRoutes = false;
     function viewRoutes() {
       var dropdown = document.getElementById("citySelection");
       if(cityLinksCleared==false){
@@ -513,15 +533,44 @@
         document.getElementById("menu-routes").innerHTML = "Exit View Routes";
         dropdown.style.display = "inline";
         cityLinksCleared = true;
+        inViewRoutes = true;
       }else{
-        setMapOnLinks(map, "City", city_links);
+        map.setZoom(4);   //restore zoom level to default 4
+        setMapOnLinks(map, "City", city_links);   //load city level nodes
         document.getElementById("menu-routes").innerHTML = "View Routes";
         dropdown.style.display = "none";
         document.getElementById("asnSelection").style.display = "none";
         cityLinksCleared = false;
+        inViewRoutes = false;
+        city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
         clearLinks("City", viewed_routes);
       }
       
+    }
+
+    //function to change the icon for a city node marker to default google reverse teardrop marker
+    function changeMarker(city){
+      for(var i=0; i<city_data.length; i++){
+        if(city==city_data[i]['City']){
+          //change the corresponding marker's icon
+          city_markers[i].setIcon(null);
+          map.setCenter(city_markers[i].getPosition());
+          city_markers[i].setLabel(1);
+          return city_markers[i];
+        }
+      }
+    }
+
+    //function to change icon for city node marker to the blue circle
+    function resetMarker(marker){
+      const icon = {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 2.5,
+          fillColor: "3a00cc",
+          fillOpacity: 0.4,
+          strokeWeight: 0.4
+      }
+      marker.setIcon(icon);
     }
 
 
