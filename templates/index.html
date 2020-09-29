@@ -98,6 +98,18 @@
       #citySelection, #asnSelection {
         display: none;
       }
+      #infoBox{
+        position: absolute; 
+        top: 0px; 
+        width: 200px; 
+        height: 400px; 
+        margin-top: 60px;
+        margin-left: 10px;
+        padding: 15px;
+        background-color: white;
+        opacity: 0.85;
+        box-shadow: 0 0 5px 2px "#fff";
+      }
     </style>
 </head>
 <body>
@@ -141,9 +153,13 @@
                 </li>
             </ul>
         </nav>
-        <div class="container-fluid" id="tooltip">
-            <div id="map" style="width:100%;height:700px;"></div>
+  </div>
+    <div class="container-fluid" id="tooltip" style="position: relative;">
+        <div id="map" style="width:100%;height:700px;"></div>
+        <div id="infoBox">
+          <p id="text"></p>
         </div>
+    </div>
     </div>
     <!-- /#page-content-wrapper -->
 </div>
@@ -162,13 +178,174 @@
         zoom: 3,
         center: new google.maps.LatLng(34.5085, 8.7832),
         //mapTypeId: google.maps.MapTypeId.TERRAIN
+        styles: [
+          {
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#f5f5f5"
+              }
+            ]
+          },
+          {
+            "elementType": "labels.icon",
+            "stylers": [
+              {
+                "visibility": "off"
+              }
+            ]
+          },
+          {
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#616161"
+              }
+            ]
+          },
+          {
+            "elementType": "labels.text.stroke",
+            "stylers": [
+              {
+                "color": "#f5f5f5"
+              }
+            ]
+          },
+          {
+            "featureType": "administrative.land_parcel",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#bdbdbd"
+              }
+            ]
+          },
+          {
+            "featureType": "poi",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#eeeeee"
+              }
+            ]
+          },
+          {
+            "featureType": "poi",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#757575"
+              }
+            ]
+          },
+          {
+            "featureType": "poi.park",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#e5e5e5"
+              }
+            ]
+          },
+          {
+            "featureType": "poi.park",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#9e9e9e"
+              }
+            ]
+          },
+          {
+            "featureType": "road",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#ffffff"
+              }
+            ]
+          },
+          {
+            "featureType": "road.arterial",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#757575"
+              }
+            ]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#dadada"
+              }
+            ]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#616161"
+              }
+            ]
+          },
+          {
+            "featureType": "road.local",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#9e9e9e"
+              }
+            ]
+          },
+          {
+            "featureType": "transit.line",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#e5e5e5"
+              }
+            ]
+          },
+          {
+            "featureType": "transit.station",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#eeeeee"
+              }
+            ]
+          },
+          {
+            "featureType": "water",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#c9c9c9"
+              }
+            ]
+          },
+          {
+            "featureType": "water",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#9e9e9e"
+              }
+            ]
+          }
+        ]
     });
 
     class Node {
         asn_number;
         paths;
-        constructor(asn_number, city, pos, paths) {
+        constructor(asn_number, as_name, city, pos, paths) {
             this.asn_number = asn_number;
+            this.as_name = as_name;
             this.city = city;
             this.pos = pos;
             this.paths = paths;
@@ -199,8 +376,9 @@
     let pop_markers = [];
     let city_links = [];
     let pop_links = [];
-    let viewed_routes = [];
+    let viewed_sources = [];
     let infoWindows = [];
+    let circles = [];
 
     // window.onload = ready(data,datalinks);
     // function ready(data,datalinks) {
@@ -211,6 +389,7 @@
 
     window.onload = ready_city(city_data, datalinks);
     function ready_city(city_data,datalinks) {
+        draw_pop(data, datalinks);
         draw_city(city_data,datalinks);
 
     }
@@ -241,16 +420,22 @@
     function drawPaths(paths, nodeType){
       var source; var destinaton; var line;
       for(var i=0; i<paths.length; i++){
-        source = searchNode(paths[i][0][0], paths[i][0][1], nodeType);
+        source = searchNode(paths[i][0][0], paths[i][0][1], nodeType)[0];
         for(var j=1; j<paths[i].length; j++){
           //search for the particular node in the path in the data array
-          destinaton = searchNode(paths[i][j][0], paths[i][j][1], nodeType);
-          var info_wind = returnPopup(paths[i][j][0], paths[i][j][1], destinaton);
-          info_wind.open(map);
-          infoWindows.push(info_wind);
+          var res = searchNode(paths[i][j][0], paths[i][j][1], nodeType);   //returns a [latlng, node index] array
+          destinaton = res[0];
+          var info_wind = returnPopup(paths[i][j][0], paths[i][j][1]);
+          if(nodeType=="City"){
+            info_wind.open(map, city_markers[res[1]]);
+          }else{
+            info_wind.open(map, pop_markers[res[1]]);
+          }
+          infoWindows.push(info_wind);    //for clearing of info windows later on
           var flightPlanCoordinates = [source,destinaton];
-          line = makePolyline(flightPlanCoordinates, "#3a00cc", 1);
-          viewed_routes.push(line);
+          line = makePolyline(flightPlanCoordinates, "#3a00cc", map);
+          //line.setMap(map);
+          viewed_sources.push(line);   //for clearing of paths when view routes is exited
           source = destinaton; //exchange source and destination 
         }
       }
@@ -263,61 +448,94 @@
           if(city==city_data[i]['City']){
             //do a sneaky thing and change the marker icon in here too
             city_markers[i].setIcon(null);
-            return {lat: parseFloat(city_data[i]['Latitude']), lng: parseFloat(city_data[i]['Longitude'])};
+            return [{lat: parseFloat(city_data[i]['Latitude']), lng: parseFloat(city_data[i]['Longitude'])}, i];    //return [latlng, index i]
           }
         }
       }else{
         for(var i=0; i<data.length; i++){
           //search for the particular city node in the path in the data array
           if(asn==parseInt(data[i]['ASN']) && city==data[i]['City']){
-            return {lat: parseFloat(data[i]['Latitude']), lng: parseFloat(data[i]['Longitude'])};
+            return [{lat: parseFloat(data[i]['Latitude']), lng: parseFloat(data[i]['Longitude'])}, i];
           }
         }
       }
     }
 
-    function makeMarker(position, asn, city, color, isSource, paths){
-      if(isSource){
-        icon = null
-      }else{
-        icon = {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 2.5,
-              fillColor: color,
-              fillOpacity: 0.4,
-              strokeWeight: 0.4
-          }
+    function changeInfoBox(asnList, city){
+      var infoBox = document.getElementById("infoBox");
+      var text = document.getElementById("text");
+      text.innerHTML = null;    //clear it first of any previous text
+      var textString = "<p>"+city+" has the following Autonomous Systems: </p>"
+                        "<br></br>"+
+                        "<ul>";
+      for(var i=0; i<asnList.length; i++){
+        textString+="<li>"+asnList[i]+"</li>";
       }
+      textString+="</ul>";   
+      text.innerHTML = textString;
+      infoBox.append(text);
+    }
 
+    var infowindow = new google.maps.InfoWindow({
+    });
+
+    function updateInfoWindow(text, position){
+      infowindow.setContent(text);
+      infowindow.setPosition(position);
+    }
+
+    function makeMarker(position, asnList, city, color, isSource, paths=null, map=null){ 
+      icon = {
+            path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+            scale: 3,
+            fillColor: color,
+            fillOpacity: 0.7,
+            strokeWeight: 0.6
+        }
       var marker = new google.maps.Marker({
           position: position,
-          sName: asn,
+          sName: city,
           map: map,
           icon: icon,
       });
-
-      if(isSource){
-        marker.addListener("click", () => {
-          info_wind = returnPopup(asn, city);
-          info_wind.open(map, marker);
-          drawPaths(paths, "POP");
-        });       
-      }
+      marker.addListener("click", () => {
+        // info_wind = returnPopup(asn, city);
+        // info_wind.open(map, marker);
+        text = "<div><p>City "+city.toString()+"</p></div>";
+        changeInfoBox(asnList, city);
+        updateInfoWindow(text, position);
+      });       
       return marker;
       //markers.push(marker);
     }
 
-    function makePolyline(flightPlanCoordinates, color, lineWeight=1){
+    function makePolyline(flightPlanCoordinates, color, map=null){
       var flightPath = new google.maps.Polyline({
         path: flightPlanCoordinates,
         geodesic: true,
         strokeColor: color,
         strokeOpacity: 1.0,
-        strokeWeight: lineWeight
+        strokeWeight: 1
       });
       //links.push(flightPath);
       flightPath.setMap(map);
       return flightPath;
+    }
+
+    function makeCircle(position, asn, city, map=null){
+      // Add the circle for this city to the map.
+      const pop_Circle = new google.maps.Circle({
+        strokeColor: "#FF0000",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#FF0000",
+        fillOpacity: 0.35,
+        map: map,
+        center: position,
+        radius: 6000,
+      });
+      return pop_Circle;
+
     }
 
     function draw_pop(data,datalinks) {
@@ -329,17 +547,16 @@
                 var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
                 nodes[b] = latLng;
                 var  asnnumber = data[b].ASN;
+                var as_name = data[b].AS_Name;
                 var city = data[b].City;
                 city = city.replace('\n', '')
                 var paths = data[b].Paths;
-                var ip = "111.111.111.0" //data[b].IP
-                var newnode = new Node(asnnumber, city, latLng, paths);
-                if(paths.length>0){
-                  //search for the 
-                }
+                var newnode = new Node(asnnumber, as_name, city, latLng, paths);
                 pop_nodes.push(newnode);
-                marker = makeMarker(latLng, data[b].ASN, city, "#F00", paths.length, paths);
-                pop_markers.push(marker);
+                //marker = makeMarker(latLng, data[b].ASN, city, "#F00", paths.length, paths);    //makes marker with map==null so it does not show
+                circle = makeCircle(latLng, data[b].ASN, city);
+                circles.push(circle);
+                //pop_markers.push(marker);
           }
           var p;
           var num_links = 0;
@@ -381,9 +598,16 @@
                 nodes[b] = latLng;
                 var city = data[b].City;
                 city = city.replace('\n', '')
-                var newnode = new CityNode(city, [12, 23], latLng);
+                //get the asn list for the node
+                var asn_list = [];
+                for(var i=0; i<pop_nodes.length; i++){
+                  if(city==pop_nodes[i].city){
+                    asn_list.push(pop_nodes[i].as_name+" ("+pop_nodes[i].asn_number+")");
+                  }
+                }
+                var newnode = new CityNode(city, asn_list, latLng);
                 city_nodes.push(newnode);
-                marker = makeMarker(latLng, data[b].ASN, city, "#3a00cc", false);
+                marker = makeMarker(latLng, asn_list, city, "#3a00cc", false, null, map); 
                 city_markers.push(marker);
           }
           var p;
@@ -409,7 +633,8 @@
                     source,target
                   ];
                 var new_link = new Link(source, target);
-                linkLine = makePolyline(flightPlanCoordinates, '#3a00cc');
+                linkLine = makePolyline(flightPlanCoordinates, '#3a00cc', map);
+                //linkLine.setMap(map);
                 city_links.push(linkLine);
                 num_links = num_links+1;
           }
@@ -423,8 +648,8 @@
           city_markers[i].setMap(map);
         }
       }else{
-        for (let i = 0; i < pop_markers.length; i++) {
-          pop_markers[i].setMap(map);
+        for (let i = 0; i < circles.length; i++) {
+          circles[i].setMap(map);
         }
       }
     }
@@ -452,19 +677,19 @@
     });
     infowindow.open(map);
 
+    //listener for zoom event changes
+    var previousZoom = map.getZoom();
     map.addListener('zoom_changed', function() {
       infowindow.setContent('Zoom: ' + map.getZoom());
       if(!inViewRoutes){    //only re-render when view routes mode is off
-        if(map.getZoom()>=6){
+        if(map.getZoom()>=7){   //zoomed in
           clearMarkers("City");
           clearLinks("City", city_links);
-          if(pop_links.length==0){
-            //means the POP map has not been drawn yet
-            ready_pop(data, datalinks);
-          } else {
-            setMapOnAll(map, "POP");
-            setMapOnLinks(map, "POP", pop_links);
-          }
+          setMapOnAll(map, "POP");
+          setMapOnLinks(map, "POP", pop_links);
+          // if(previousZoom-map.getZoom()<0){
+          //   map.setZoom(9);   //if you zoom in above level 7, automatically zoom you into level 9 since thats where city names appear
+          // }
           //load the PoP level map  
         } else{
           clearMarkers("POP");
@@ -472,15 +697,14 @@
           setMapOnAll(map, "City");
           setMapOnLinks(map, "City", city_links);
         }
-      }
-        
+        previousZoom=map.getZoom();
+      }   
     });
 
     function animateCircle(line) {
         var count = 0;
         window.setInterval(function() {
           count = (count + 1) % 200;
-
           var icons = line.get('icons');
           icons[0].offset = (count / 2) + '%';
           line.set('icons', icons);
@@ -532,6 +756,7 @@
       //look for the specific node with that asn and city
       for(var i=0; i<pop_nodes.length; i++){
         if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
+          //viewed_sources.push(i);
           drawPaths(pop_nodes[i].paths, "City");
         }
       }
@@ -542,6 +767,7 @@
     function viewRoutes() {
       var dropdown = document.getElementById("citySelection");
       if(cityLinksCleared==false){
+        map.setZoom(4);
         clearLinks("City", city_links);
         document.getElementById("menu-routes").innerHTML = "Exit View Routes";
         dropdown.style.display = "inline";
@@ -549,6 +775,7 @@
         inViewRoutes = true;
       }else{
         map.setZoom(4);   //restore zoom level to default 4
+        previousZoom=4;
         setMapOnLinks(map, "City", city_links);   //load city level nodes
         document.getElementById("menu-routes").innerHTML = "View Routes";
         dropdown.style.display = "none";
@@ -558,7 +785,7 @@
         city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
         infoWindows.forEach(closeWindow);   //remove all info windows
         infoWindows.length = 0;   //clear the infoWindows
-        clearLinks("City", viewed_routes);
+        clearLinks("City", viewed_sources);
       }
       
     }
@@ -579,7 +806,7 @@
     //function to change icon for city node marker to the blue circle
     function resetMarker(marker){
       const icon = {
-          path: google.maps.SymbolPath.CIRCLE,
+          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
           scale: 2.5,
           fillColor: "3a00cc",
           fillOpacity: 0.4,
@@ -591,6 +818,11 @@
     //function to close an info window
     function closeWindow(infowindow){
       infowindow.close();
+    }
+
+    //function to redraw paths of pop_nodes[i]
+    function redrawPaths(index){
+      drawPaths(pop_nodes[index].paths, "POP");
     }
 
 
