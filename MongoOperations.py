@@ -295,7 +295,7 @@ def get_asn_location(platform):
         collection = db.Caidaasnlocation
         #create collection for the city nodes for city level map
         city_nodes = db.CaidaCityLocations
-        paths_col = db.SpeedcheckerPaths
+        paths_col = db.CaidaPaths
         paths = list(paths_col.find({}, {"_id":0}))
         asn_location_helper(collection, city_nodes, CaidaGlobalUniqueNodes, paths)
 
@@ -303,7 +303,7 @@ def get_asn_location(platform):
         collection = db.Ripeasnlocation
         #create collection for the city nodes for city level map
         city_nodes = db.RipeCityLocations
-        paths_col = db.SpeedcheckerPaths
+        paths_col = db.RipePaths
         paths = list(paths_col.find({}, {"_id":0}))
         asn_location_helper(collection, city_nodes, RipeGlobalUniqueNodes, paths)
 
@@ -515,10 +515,10 @@ def get_linked_asn(platform):
         #     f.write(str(node)+'\n')
         # f.close()
 
-        # for i in range(len(sources)):
-        #     my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
-        #                "Target_City": targets[i][1], "RTT": 0.0}
-        #     collection.insert_one(my_dict)
+        for i in range(len(sources)):
+            my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
+                       "Target_City": targets[i][1], "RTT": 0.0}
+            collection.insert_one(my_dict)
 
     elif platform == "RIPE":
         collection = mydb["Ripelinkedasn"]
@@ -604,10 +604,11 @@ def get_linked_asn(platform):
         #     f.write(str(node)+'\n')
         # f.close()
 
-        # for i in range(len(sources)):
-        #     my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
-        #                "Target_City": targets[i][1], "RTT": rtt_list[i]}
-        #     collection.insert_one(my_dict)
+        for i in range(len(sources)):
+            my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
+                       "Target_City": targets[i][1], "RTT": rtt_list[i]}
+            collection.insert_one(my_dict)
+
     connect.close()
 
 def drop_traces_collection(platform):
@@ -820,18 +821,20 @@ def regenerate_links(platform):
         print("done. getting asn locations for RIPE")
         get_asn_location("RIPE")
 
-# def main():
-#     # drop_mongo_collection("SpeedChecker")
-#     # get_linked_asn("SpeedChecker")
-#     # print("getting paths")
-#     # get_asn_location("SpeedChecker")
-#     # upload_to_mongo("RIPE")
-#     # delete_empty_traces("RIPE")
-#     regenerate_links("SpeedChecker")
-#     regenerate_links("CAIDA")
-#     regenerate_links("RIPE")
-#     # data = get_topology_data("SpeedChecker")
-#     # print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
+def main():
+    # drop_mongo_collection("SpeedChecker")
+    # get_linked_asn("SpeedChecker")
+    # print("getting paths")
+    # get_asn_location("SpeedChecker")
+    # upload_to_mongo("RIPE")
+    # # delete_empty_traces("RIPE")
+    #regenerate_links("SpeedChecker")
+    regenerate_links("CAIDA")
+    regenerate_links("RIPE")
+    data = get_topology_data("RIPE")
+    print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
+    # for node in data[0]:
+    #     print(node)
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
