@@ -109,7 +109,19 @@
         background-color: white;
         opacity: 0.85;
         box-shadow: 0 0 5px 2px "#fff";
+        overflow: auto;
       }
+      .labels {
+         color: red;
+         background-color: white;
+         font-family: "Lucida Grande", "Arial", sans-serif;
+         font-size: 10px;
+         font-weight: bold;
+         text-align: center;
+         width: 40px;     
+         border: 2px solid black;
+         white-space: nowrap;
+       }
     </style>
 </head>
 <body>
@@ -131,7 +143,7 @@
                       </div>
                     </div>
                     <div class="btn-group">
-                        <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
+                        <a href=simulation><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
                         <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
                     </div>
                     <div display="inline" id="citySelection">
@@ -157,7 +169,7 @@
     <div class="container-fluid" id="tooltip" style="position: relative;">
         <div id="map" style="width:100%;height:700px;"></div>
         <div id="infoBox">
-          <p id="text"></p>
+          <p id="text">Zoom in and click on an icon to display information.</p>
         </div>
     </div>
     </div>
@@ -378,6 +390,7 @@
     let pop_links = [];
     let viewed_sources = [];
     let infoWindows = [];
+    let asnInfoWindows = [];
     let circles = [];
 
     // window.onload = ready(data,datalinks);
@@ -419,6 +432,8 @@
 
     function drawPaths(paths, nodeType){
       var source; var destinaton; var line;
+      infoWindows.forEach(closeWindow);   //remove all info windows
+      infoWindows.length = 0;
       for(var i=0; i<paths.length; i++){
         source = searchNode(paths[i][0][0], paths[i][0][1], nodeType)[0];
         for(var j=1; j<paths[i].length; j++){
@@ -479,6 +494,8 @@
     var infowindow = new google.maps.InfoWindow({
     });
 
+    
+
     function updateInfoWindow(text, position){
       infowindow.setContent(text);
       infowindow.setPosition(position);
@@ -507,6 +524,36 @@
       });       
       return marker;
       //markers.push(marker);
+    }
+
+    function makePOPmarker(position, asn, map=null){
+      icon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: "#3a00cc",
+            fillOpacity: 0.4,
+            strokeWeight: 0.6
+      }
+
+      var marker = new google.maps.Marker({
+          position: position,
+          sName: asn,
+          //color: "#F00",
+          //icon: 'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project',
+          icon: icon,
+          map: map,
+          label: {
+              color: '#000000',
+              fontWeight: 'bold',
+              text: asn,
+              fontSize: '15px',
+          },
+      });
+      // var infowindow = new google.maps.InfoWindow({
+      //   content: asn,
+      // });
+      // asnInfoWindows.push(infowindow);
+      return marker;
     }
 
     function makePolyline(flightPlanCoordinates, color, map=null){
@@ -553,10 +600,10 @@
                 var paths = data[b].Paths;
                 var newnode = new Node(asnnumber, as_name, city, latLng, paths);
                 pop_nodes.push(newnode);
-                //marker = makeMarker(latLng, data[b].ASN, city, "#F00", paths.length, paths);    //makes marker with map==null so it does not show
-                circle = makeCircle(latLng, data[b].ASN, city);
-                circles.push(circle);
-                //pop_markers.push(marker);
+                marker = makePOPmarker(latLng, data[b].ASN);    //makes marker with map==null so it does not show
+                // circle = makeCircle(latLng, data[b].ASN, city);
+                // circles.push(circle);
+                pop_markers.push(marker);
           }
           var p;
           var num_links = 0;
@@ -580,7 +627,7 @@
                   source,target
                 ];
               var new_link = new Link(source, target);
-              linkLine = makePolyline(flightPlanCoordinates, '#FF0000');
+              linkLine = makePolyline(flightPlanCoordinates, '#3a00cc');
               pop_links.push(linkLine);
               num_links = num_links+1;
           }
@@ -648,8 +695,9 @@
           city_markers[i].setMap(map);
         }
       }else{
-        for (let i = 0; i < circles.length; i++) {
-          circles[i].setMap(map);
+        for (let i = 0; i < pop_markers.length; i++) {
+          //circles[i].setMap(map);
+          pop_markers[i].setMap(map);
         }
       }
     }
@@ -671,16 +719,16 @@
       setMapOnLinks(null, nodeType, links_list);
     }
 
-    var infowindow = new google.maps.InfoWindow({
-      content: 'Change the zoom level',
-      position: new google.maps.LatLng(34.5085, 8.7832),
-    });
-    infowindow.open(map);
+    // var infowindow = new google.maps.InfoWindow({
+    //   content: 'Change the zoom level',
+    //   position: new google.maps.LatLng(34.5085, 8.7832),
+    // });
+    // infowindow.open(map);
 
     //listener for zoom event changes
     var previousZoom = map.getZoom();
     map.addListener('zoom_changed', function() {
-      infowindow.setContent('Zoom: ' + map.getZoom());
+      //infowindow.setContent('Zoom: ' + map.getZoom());
       if(!inViewRoutes){    //only re-render when view routes mode is off
         if(map.getZoom()>=7){   //zoomed in
           clearMarkers("City");
@@ -797,7 +845,6 @@
           //change the corresponding marker's icon
           city_markers[i].setIcon(null);
           map.setCenter(city_markers[i].getPosition());
-          city_markers[i].setLabel("1");
           return city_markers[i];
         }
       }

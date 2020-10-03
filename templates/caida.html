@@ -109,6 +109,7 @@
         background-color: white;
         opacity: 0.85;
         box-shadow: 0 0 5px 2px "#fff";
+        overflow: auto;
       }
     </style>
 </head>
@@ -131,7 +132,7 @@
                       </div>
                     </div>
                     <div class="btn-group">
-                        <a href=simulate><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
+                        <a href=simulation><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
                         <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
                     </div>
                     <div display="inline" id="citySelection">
@@ -157,7 +158,7 @@
     <div class="container-fluid" id="tooltip" style="position: relative;">
         <div id="map" style="width:100%;height:700px;"></div>
         <div id="infoBox">
-          <p id="text"></p>
+          <p id="text">Zoom in and click on an icon to display information.</p>
         </div>
     </div>
     </div>
@@ -419,6 +420,8 @@
 
     function drawPaths(paths, nodeType){
       var source; var destinaton; var line;
+      infoWindows.forEach(closeWindow);   //remove all info windows
+      infoWindows.length = 0;
       for(var i=0; i<paths.length; i++){
         source = searchNode(paths[i][0][0], paths[i][0][1], nodeType)[0];
         for(var j=1; j<paths[i].length; j++){
@@ -671,16 +674,16 @@
       setMapOnLinks(null, nodeType, links_list);
     }
 
-    var infowindow = new google.maps.InfoWindow({
-      content: 'Change the zoom level',
-      position: new google.maps.LatLng(34.5085, 8.7832),
-    });
-    infowindow.open(map);
+    // var infowindow = new google.maps.InfoWindow({
+    //   content: 'Change the zoom level',
+    //   position: new google.maps.LatLng(34.5085, 8.7832),
+    // });
+    // infowindow.open(map);
 
     //listener for zoom event changes
     var previousZoom = map.getZoom();
     map.addListener('zoom_changed', function() {
-      infowindow.setContent('Zoom: ' + map.getZoom());
+      //infowindow.setContent('Zoom: ' + map.getZoom());
       if(!inViewRoutes){    //only re-render when view routes mode is off
         if(map.getZoom()>=7){   //zoomed in
           clearMarkers("City");
@@ -797,7 +800,6 @@
           //change the corresponding marker's icon
           city_markers[i].setIcon(null);
           map.setCenter(city_markers[i].getPosition());
-          city_markers[i].setLabel("1");
           return city_markers[i];
         }
       }

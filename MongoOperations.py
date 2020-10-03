@@ -828,7 +828,7 @@ def main():
     # get_asn_location("SpeedChecker")
     # upload_to_mongo("RIPE")
     # # delete_empty_traces("RIPE")
-    #regenerate_links("SpeedChecker")
+    regenerate_links("SpeedChecker")
     regenerate_links("CAIDA")
     regenerate_links("RIPE")
     data = get_topology_data("RIPE")
