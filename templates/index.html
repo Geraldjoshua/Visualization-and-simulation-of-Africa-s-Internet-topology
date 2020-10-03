@@ -145,6 +145,7 @@
                     <div class="btn-group">
                         <a href=simulation><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
                         <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
+                        <a href=#><button class="btn btn-primary" id="view_pop">View PoP</button></a>
                     </div>
                     <div display="inline" id="citySelection">
                       <label for="citySelect">Select source city:</label>
@@ -649,7 +650,8 @@
                 var asn_list = [];
                 for(var i=0; i<pop_nodes.length; i++){
                   if(city==pop_nodes[i].city){
-                    asn_list.push(pop_nodes[i].as_name+" ("+pop_nodes[i].asn_number+")");
+                    //asn_list.push(pop_nodes[i].as_name+" ("+pop_nodes[i].asn_number+")");
+                    asn_list.push([pop_nodes[i].as_name, pop_nodes[i].asn_number]);
                   }
                 }
                 var newnode = new CityNode(city, asn_list, latLng);
@@ -762,6 +764,7 @@
     //create the dropdown for the cities with source ASN's
     var cityLinksCleared = false;
     document.getElementById("menu-routes").addEventListener("click", viewRoutes);
+    document.getElementById("view_pop").addEventListener("click", viewPOP);
     //set the dropdown list options as all the cities available
     for(var i=0; i<data.length; i++){
       if(data[i]['Paths'].length>0){
@@ -798,16 +801,28 @@
     //respond to changes in the asn select drop down by drawing the paths
     document.getElementById("asnSelect").addEventListener("change", ()=>{
       x = document.getElementById("asnSelect");
-      info_wind = returnPopup(x.value, city);
-      info_wind.open(map, sourceMarker);
-      infoWindows.push(info_wind);
-      //look for the specific node with that asn and city
-      for(var i=0; i<pop_nodes.length; i++){
-        if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
-          //viewed_sources.push(i);
-          drawPaths(pop_nodes[i].paths, "City");
+      if(inViewRoutes){
+        info_wind = returnPopup(x.value, city);
+        info_wind.open(map, sourceMarker);
+        infoWindows.push(info_wind);
+        //look for the specific node with that asn and city
+        for(var i=0; i<pop_nodes.length; i++){
+          if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
+            //viewed_sources.push(i);
+            drawPaths(pop_nodes[i].paths, "City");
+          }
+        }
+      }else if(inViewPOP){
+        //look for all the nodes with that asn
+        for(var i=0; i<city_nodes.length; i++){
+          for(var j=0; j<city_nodes[i].asn_list.length; j++){
+            if(x.value==city_nodes[i].asn_list[j][1]){
+              city_markers[i].setIcon(null);
+            }
+          }
         }
       }
+      
     })
 
     //respond to the view routes button being toggled
@@ -834,8 +849,33 @@
         infoWindows.forEach(closeWindow);   //remove all info windows
         infoWindows.length = 0;   //clear the infoWindows
         clearLinks("City", viewed_sources);
-      }
-      
+      } 
+    }
+
+    //respond to the view routes button being toggled
+    var inViewPOP = false;
+    function viewPOP() {
+      var dropdown = document.getElementById("asnSelection");
+      if(inViewPOP==false){
+        map.setZoom(4);
+        document.getElementById("view_pop").innerHTML = "Exit View PoP";
+        dropdown.style.display = "inline";
+        inViewPOP = true;
+        //populate the dropdown with asn
+        for(var i=0; i<data.length; i++){
+          var asn = data[i]['ASN'];
+          var option = document.createElement("option");
+          option.text = asn;
+          document.getElementById("asnSelect").add(option);
+        }
+      }else{
+        map.setZoom(4);   //restore zoom level to default 4
+        previousZoom=4;
+        document.getElementById("view_pop").innerHTML = "View PoP";
+        dropdown.style.display = "none";
+        document.getElementById("asnSelection").style.display = "none";
+        inViewPOP = false;
+      } 
     }
 
     //function to change the icon for a city node marker to default google reverse teardrop marker
