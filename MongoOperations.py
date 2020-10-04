@@ -13,6 +13,9 @@ geolocator = Nominatim(user_agent="city_geoloc")
 SpeedChGlobalUniqueNodes = []
 CaidaGlobalUniqueNodes = []
 RipeGlobalUniqueNodes = []
+SpeedChPaths = []
+CaidaPaths = []
+RipePaths = []
 connection = "mongodb+srv://willie:admin123@testing.ac8uu.mongodb.net/test?retryWrites=true&w=majority"
 
 
@@ -61,13 +64,16 @@ def upload_to_mongo(platform, data):
                             response = reader.asn(ip)
                             cityResponse = cityReader.city(ip)
                             asn = response.autonomous_system_number
+                            as_name = response.autonomous_system_organization
                             city = cityResponse.city.name
                         except:
                             # print("Address not in database")
                             asn = ""
+                            as_name = ''
                             city = ""
                         # append the new fields to the testResult
                         tracert.update({"ASN": asn})
+                        tracert.update({"AS_Name": as_name})
                         tracert.update({"City": city})
 
                     # now insert the whole updated document into mongo
@@ -82,14 +88,17 @@ def upload_to_mongo(platform, data):
                     response = reader.asn(str(ip).strip())
                     cityResponse = cityReader.city(str(ip).strip())
                     asn = response.autonomous_system_number
+                    as_name = response.autonomous_system_organization
                     city = cityResponse.city.name
                 except:
                     # print("Address not in database")
                     asn = ""
+                    as_name = ""
                     city = ""
                 # source_address = {"source_address": ip, "ASN": asn, "City": city}
                 trace["source_address"] = ip
                 trace["ASN"] = asn
+                trace["AS_Name"] = as_name
                 trace["City"] = city
 
 
@@ -108,14 +117,17 @@ def upload_to_mongo(platform, data):
                         response = reader.asn(str(ip).strip())
                         cityResponse = cityReader.city(str(ip).strip())
                         asn = response.autonomous_system_number
+                        as_name = response.autonomous_system_organization
                         city = cityResponse.city.name
                     except:
                         # print("Address not in database")
                         asn = ""
+                        as_name = ""
                         city = ""
 
                     # append the new fields to the testResult
                     testResult.update({"ASN": asn})
+                    tracert.update({"AS_Name": as_name})
                     testResult.update({"City": city})
                     #hop = {"addr": ip, "ASN": asn, "City": city}
                     tracert.append(testResult)
@@ -132,13 +144,16 @@ def upload_to_mongo(platform, data):
                     response = reader.asn(str(ip).strip())
                     cityResponse = cityReader.city(str(ip).strip())
                     asn = response.autonomous_system_number
+                    as_name = response.autonomous_system_organization
                     city = cityResponse.city.name
                 except:
                     # print("Address not in database")
                     asn = ""
+                    as_name = ""
                     city = ""
                 trace["source_address"] = ip
                 trace["ASN"] = asn
+                trace["AS_Name"] = as_name
                 trace["City"] = city
                 #source_address = {"source_address": ip, "ASN": asn, "City": city}
                 #collection.insert_one(source_address)
@@ -157,15 +172,18 @@ def upload_to_mongo(platform, data):
                         response = reader.asn(str(ip).strip())
                         cityResponse = cityReader.city(str(ip).strip())
                         asn = response.autonomous_system_number
+                        as_name = response.autonomous_system_organization
                         city = cityResponse.city.name
 
                     except:
                         # print("Address not in database")
                         asn = ""
+                        as_name = ""
                         city = ""
 
                     # append the new fields to the testResult
                     testResult.update({"ASN": asn})
+                    tracert.update({"AS_Name": as_name})
                     testResult.update({"City": city})
                     tracert.append(testResult)
                 trace["Hops"] = tracert
@@ -269,34 +287,53 @@ def get_asn_location(platform):
         collection = db.Speedcheckerasnlocation
         #create collection for the city nodes for city level map
         city_nodes = db.SpeedcheckerCityLocations
-        asn_location_helper(collection, city_nodes, SpeedChGlobalUniqueNodes)
+        paths_col = db.SpeedcheckerPaths
+        paths = list(paths_col.find({}, {"_id":0}))
+        asn_location_helper(collection, city_nodes, SpeedChGlobalUniqueNodes, paths)
 
     elif platform == "CAIDA":
         collection = db.Caidaasnlocation
         #create collection for the city nodes for city level map
         city_nodes = db.CaidaCityLocations
-        asn_location_helper(collection, city_nodes, CaidaGlobalUniqueNodes)
+        paths_col = db.CaidaPaths
+        paths = list(paths_col.find({}, {"_id":0}))
+        asn_location_helper(collection, city_nodes, CaidaGlobalUniqueNodes, paths)
 
     elif platform == "RIPE":
         collection = db.Ripeasnlocation
         #create collection for the city nodes for city level map
         city_nodes = db.RipeCityLocations
-        asn_location_helper(collection, city_nodes, RipeGlobalUniqueNodes)
+        paths_col = db.RipePaths
+        paths = list(paths_col.find({}, {"_id":0}))
+        asn_location_helper(collection, city_nodes, RipeGlobalUniqueNodes, paths)
 
 
-def asn_location_helper(collection, city_collection, uniqueNodes_arr):
+def asn_location_helper(collection, city_collection, uniqueNodes_arr, paths_arr):
+    cities = []
     for item in uniqueNodes_arr:
         if item is not None:
             node_name = item[0]
             node_city = item[1]
+            as_name = item[3]
+            path = []
             city_lat, city_long = geolocate(city=node_city, ip=item[2])
-            city_dict = {"Latitude": city_lat, "Longitude": city_long,
+
+            #if the city isnt covered already
+            if node_city not in cities:
+                city_dict = {"Latitude": city_lat, "Longitude": city_long,
                            "City": str(node_city).rstrip('\r\n')}
+                cities.append(node_city)
+                city_collection.insert_one(city_dict)
+
+            for pth in paths_arr:   #paths_arr is a list of dictionaries {'Path': [[asn, city], [asn2, city2]]}
+                if pth['Path'][0][0]==node_name and pth['Path'][0][1]==node_city:
+                    #print(pth['Path'])
+                    path.append(pth['Path'])
             node_lat, node_long = generate_random_loc(city_lat, city_long, 1, 0.5)
-            my_dict = {"ASN": str(node_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
-                       "City": str(node_city).rstrip('\r\n')}
+            my_dict = {"ASN": str(node_name).rstrip('\r\n'), "AS_Name": str(as_name).rstrip('\r\n'), "Longitude": node_long, "Latitude": node_lat,
+                       "City": str(node_city).rstrip('\r\n'), "Path": path}
             collection.insert_one(my_dict)
-            city_collection.insert_one(city_dict)
+            
 
 
 def get_linked_asn(platform):
@@ -314,13 +351,16 @@ def get_linked_asn(platform):
     if platform == "SpeedChecker":
         collection = mydb["Speedcheckerlinkedasn"]
         mycol = mydb["Speedcheckertraces"]
+        paths_col = mydb["SpeedcheckerPaths"]
         sources = []
         targets = []
+        trace_path = []
+        paths = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []
         for x in mycol.find():
             if len(x['Tracert']) != 0:
-                source = [x['Tracert'][0]['ASN'], x['Tracert'][0]['City'], x['Tracert'][0]['IP']]
+                source = [x['Tracert'][0]['ASN'], x['Tracert'][0]['City'], x['Tracert'][0]['IP'], "Telstra Corporation Ltd"] #x['Tracert'][0]['AS_Name']]
             else:
                 continue
 
@@ -328,7 +368,7 @@ def get_linked_asn(platform):
             for a in x['Tracert']:
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
-                    source = [a['ASN'], a['City'], a['IP']]
+                    source = [a['ASN'], a['City'], a['IP'], "Telstra Corporation Ltd"] # a['Tracert'][0]['AS_Name']]
                     continue
 
                 # first check if ASN='' or City=''
@@ -336,10 +376,13 @@ def get_linked_asn(platform):
                     continue
 
                 # destination is a list variable
-                destination = [a['ASN'], a['City'], a['IP']]
+                destination = [a['ASN'], a['City'], a['IP'], "Telstra Corporation Ltd"] #a['Tracert'][0]['AS_Name']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
+
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
@@ -376,6 +419,19 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            #print(trace_path)
+            if len(trace_path)>1:
+                path_dict = {"Path": trace_path}
+                paths_col.insert_one(path_dict)
+            trace_path.clear()
+        # f = open("SpeedChPaths.txt", 'w', encoding="utf-8")
+        # print("writing...")
+        # for path in paths:
+        #     f.write(str(path)+'\n')
+        # f.close()
+        # global SpeedChPaths
+        # SpeedChPaths = paths
         global SpeedChGlobalUniqueNodes
         SpeedChGlobalUniqueNodes = uniqueNodes
         for i in range(len(sources)):
@@ -390,7 +446,6 @@ def get_linked_asn(platform):
         paths_col = mydb["CaidaPaths"]
         sources = []
         targets = []
-        traces = []
         trace_path = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []  # Caida does not have RTT though
@@ -398,7 +453,7 @@ def get_linked_asn(platform):
         sourceValid = False
         for x in mycol.find():
             if len(x['Hops']) != 0:
-                source = [x['ASN'], x['City'], x['source_address']]
+                source = [x['ASN'], x['City'], x['source_address'], "Telstra Corporation Ltd"] #x['AS_Name']]
             else:
                 continue
 
@@ -406,7 +461,7 @@ def get_linked_asn(platform):
             for a in x['Hops']:
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
-                    source = [a['ASN'], a['City'], a['addr']]
+                    source = [a['ASN'], a['City'], a['addr'], "Telstra Corporation Ltd"] #a['AS_Name']]
                     continue
 
                 # first check if ASN='' or City=''
@@ -414,11 +469,13 @@ def get_linked_asn(platform):
                     continue
 
                 # destination is a list variable
-                destination = [a['ASN'], a['City'], a['addr']]
+                destination = [a['ASN'], a['City'], a['addr'], "Telstra Corporation Ltd"] #a['AS_Name']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
 
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
                 sources.append(source)
                 targets.append(destination)
 
@@ -444,6 +501,11 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            if len(trace_path)>1:
+                path_dict = {"Path": trace_path}
+                paths_col.insert_one(path_dict)
+            trace_path.clear()
         global CaidaGlobalUniqueNodes
         CaidaGlobalUniqueNodes = uniqueNodes
 
@@ -465,7 +527,6 @@ def get_linked_asn(platform):
         paths_col = mydb["RipePaths"]
         sources = []
         targets = []
-        traces = []
         trace_path = []
         uniqueNodes = []  # list of all unique nodes
         rtt_list = []
@@ -473,7 +534,7 @@ def get_linked_asn(platform):
         sourceValid = False
         for x in mycol.find():
             if len(x['Hops']) != 0:
-                source = [x['ASN'], x['City'], x['source_address']]
+                source = [x['ASN'], x['City'], x['source_address'], "Telstra Corporation Ltd"] #x['AS_Name']]
             else:
                 continue
 
@@ -481,7 +542,7 @@ def get_linked_asn(platform):
             for a in x['Hops']:
                 # first check if source does not have empty ASN or City
                 if source[0] == '' or source[1] == '' or source[1] is None:
-                    source = [a['ASN'], a['City'], a['result'][0]['from']]
+                    source = [a['ASN'], a['City'], a['result'][0]['from'],"Telstra Corporation Ltd"] # a['AS_Name']]
                     continue
 
                 # first check if ASN='' or City=''
@@ -489,10 +550,13 @@ def get_linked_asn(platform):
                     continue
 
                 # destination is a list variable
-                destination = [a['ASN'], a['City'], a['result'][0]['from']]
+                destination = [a['ASN'], a['City'], a['result'][0]['from'], "Telstra Corporation Ltd"] #a['AS_Name']]
                 # keep updating the destination variable until the ASN is different from source
-                if source == destination:
+                if source[:2] == destination[:2]:
                     continue
+
+                #at this point we have distinct, valid source and destination
+                trace_path.append(source[:2])
 
                 # append rtt to source and destination
                 total = 0
@@ -525,6 +589,12 @@ def get_linked_asn(platform):
                             break
                     if not_found:
                         uniqueNodes.append(source)
+            trace_path.append(destination[:2])
+            if len(trace_path)>1:
+                path_dict = {"Path": trace_path}
+                paths_col.insert_one(path_dict)
+            trace_path.clear()
+
         global RipeGlobalUniqueNodes
         RipeGlobalUniqueNodes = uniqueNodes
 
@@ -538,6 +608,7 @@ def get_linked_asn(platform):
             my_dict = {"Source_ASN": sources[i][0], "Source_City": sources[i][1], "Target_ASN": targets[i][0],
                        "Target_City": targets[i][1], "RTT": rtt_list[i]}
             collection.insert_one(my_dict)
+
     connect.close()
 
 def drop_traces_collection(platform):
@@ -580,25 +651,31 @@ def drop_mongo_collection(platform):
         mycol_6 = mydb["Speedcheckerlinkedasn"]
         mycol_7 = mydb["Speedcheckerasnlocation"]
         mycol_10 = mydb["SpeedcheckerCityLocations"]
+        mycol_13 = mydb["SpeedcheckerPaths"]
         mycol_6.drop()
         mycol_7.drop()
         mycol_10.drop()
+        mycol_13.drop()
 
     elif platform == "CAIDA":
         mycol_4 = mydb["Caidalinkedasn"]
         mycol_9 = mydb["Caidaasnlocation"]
         mycol_11 = mydb["CaidaCityLocations"]
+        mycol_14 = mydb["CaidaPaths"]
         mycol_4.drop()
         mycol_9.drop()
         mycol_11.drop()
+        mycol_14.drop()
 
     elif platform == "RIPE":
         mycol_5 = mydb["Ripelinkedasn"]
         mycol_8 = mydb["Ripeasnlocation"]
         mycol_12 = mydb["RipeCityLocations"]
+        mycol_15 = mydb["RipePaths"]
         mycol_5.drop()
         mycol_8.drop()
         mycol_12.drop()
+        mycol_15.drop()
 
     connect.close()
 
@@ -706,8 +783,8 @@ def get_topology_data(platform):
     # fetch the nodes data
     cursor = nodes.find()
     for record in cursor:
-        dat = {"ASN": record['ASN'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
-               "City": record['City']}
+        dat = {"ASN": record['ASN'], "AS_Name": record['AS_Name'], "Longitude": record['Longitude'], "Latitude": record['Latitude'],
+               "City": record['City'], "Paths": record['Path']}
         nodedata.append(dat)
     data.append(nodedata)
 
@@ -744,16 +821,20 @@ def regenerate_links(platform):
         print("done. getting asn locations for RIPE")
         get_asn_location("RIPE")
 
-# def main():
-#     # drop_mongo_collection("SpeedChecker")
-#     # drop_mongo_collection("CAIDA")
-#     # drop_mongo_collection("RIPE")
-#     # upload_to_mongo("RIPE")
-#     # delete_empty_traces("RIPE")
-#     regenerate_links("CAIDA")
-#     regenerate_links("RIPE")
-#     # data = get_topology_data("SpeedChecker")
-#     # print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
+def main():
+    # drop_mongo_collection("SpeedChecker")
+    # get_linked_asn("SpeedChecker")
+    # print("getting paths")
+    # get_asn_location("SpeedChecker")
+    # upload_to_mongo("RIPE")
+    # # delete_empty_traces("RIPE")
+    regenerate_links("SpeedChecker")
+    regenerate_links("CAIDA")
+    regenerate_links("RIPE")
+    data = get_topology_data("RIPE")
+    print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
+    # for node in data[0]:
+    #     print(node)
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
