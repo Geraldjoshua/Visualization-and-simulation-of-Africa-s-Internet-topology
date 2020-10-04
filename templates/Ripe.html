@@ -110,6 +110,27 @@
         opacity: 0.85;
         box-shadow: 0 0 5px 2px "#fff";
         overflow: auto;
+        border: 2px solid black;
+      }
+      #clear{
+        visibility: hidden;
+        margin-left: 10px;
+        margin-right: 10px;
+      }
+      .alert{
+        display: none;
+        position: absolute; 
+        top: 0px;
+      }
+      #menu-routes, #view_pop, #simulation{
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+      .btn-default{ 
+        background-color: #6c757d;
+        color:#FFF;
+        border-color: #2F3E48;
+        margin-bottom: 5px;
       }
     </style>
 </head>
@@ -120,10 +141,10 @@
         <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
             <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                 <li class="nav-item active">
-                    <label for="platforms">platform chosen: Ripe</label>
+                    <label for="platforms">Data from: Ripe Atlas</label>
                     <div class="btn-group" id="platforms">
                       <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        choose platforms
+                        Choose measuremnt platform
                       </button>
                       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                         <a class="dropdown-item" href="speed">Speedchecker</a>
@@ -132,8 +153,10 @@
                       </div>
                     </div>
                     <div class="btn-group">
-                        <a href=simulation><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
-                        <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
+                        <a href=simulation><button class="btn btn-default btn-sm" id="menu-toggle">Simulation</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="menu-routes">View Routes</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="view_pop">View PoP</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="clear">Clear</button></a>
                     </div>
                     <div display="inline" id="citySelection">
                       <label for="citySelect">Select source city:</label>
@@ -157,6 +180,10 @@
   </div>
     <div class="container-fluid" id="tooltip" style="position: relative;">
         <div id="map" style="width:100%;height:700px;"></div>
+        <div class="alert alert-info alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                  Select City from dropdown or click on any node on the map.
+        </div>
         <div id="infoBox">
           <p id="text">Zoom in and click on an icon to display information.</p>
         </div>
@@ -378,15 +405,9 @@
     let city_links = [];
     let pop_links = [];
     let viewed_sources = [];
+    let viewed_pops = [];
     let infoWindows = [];
-    let circles = [];
-
-    // window.onload = ready(data,datalinks);
-    // function ready(data,datalinks) {
-
-    //     draw(data,datalinks);
-
-    // }
+    let asnInfoWindows = [];
 
     window.onload = ready_city(city_data, datalinks);
     function ready_city(city_data,datalinks) {
@@ -400,12 +421,19 @@
 
     }
 
-    function returnPopup(asn, city, latLng=null){
-      const contentString = 
-          '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
+    function returnPopup(asn=null, city, latLng=null){
+      var contentString;
+      if(asn==null){
+        contentString = 
+          '<div><p>City:'+city+'</p></div>';
+      }else{
+        contentString = 
+        '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
+      }
+      
       if(latLng==null){
         const infowindow = new google.maps.InfoWindow({
-          content: contentString
+          content: contentString,
         });
         return infowindow;
       }else{
@@ -482,6 +510,8 @@
     var infowindow = new google.maps.InfoWindow({
     });
 
+    
+
     function updateInfoWindow(text, position){
       infowindow.setContent(text);
       infowindow.setPosition(position);
@@ -490,7 +520,7 @@
     function makeMarker(position, asnList, city, color, isSource, paths=null, map=null){ 
       icon = {
             path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-            scale: 3,
+            scale: 4,
             fillColor: color,
             fillOpacity: 0.7,
             strokeWeight: 0.6
@@ -506,10 +536,47 @@
         // info_wind.open(map, marker);
         text = "<div><p>City "+city.toString()+"</p></div>";
         changeInfoBox(asnList, city);
-        updateInfoWindow(text, position);
+        updateInfoWindow("City: "+city , position);
+
+        if(inViewRoutes){
+          document.getElementById('asnSelect').innerText = null;
+          document.getElementById("asnSelection").style.display = "inline";
+          selected_city = city;
+          asnDropdown(selected_city);
+        }
       });       
       return marker;
       //markers.push(marker);
+    }
+
+    function makePOPmarker(position, asn, map=null){
+      icon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: "#3a00cc",
+            fillOpacity: 0.4,
+            strokeWeight: 0.6
+      }
+
+      var marker = new google.maps.Marker({
+          position: position,
+          sName: asn,
+          //color: "#F00",
+          //icon: 'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project',
+          icon: icon,
+          map: map,
+          label: {
+              color: '#000000',
+              fontWeight: 'bold',
+              text: asn,
+              fontSize: '15px',
+          },
+      });
+      // var infowindow = new google.maps.InfoWindow({
+      //   content: asn,
+      // });
+      // asnInfoWindows.push(infowindow);
+      return marker;
     }
 
     function makePolyline(flightPlanCoordinates, color, map=null){
@@ -523,22 +590,6 @@
       //links.push(flightPath);
       flightPath.setMap(map);
       return flightPath;
-    }
-
-    function makeCircle(position, asn, city, map=null){
-      // Add the circle for this city to the map.
-      const pop_Circle = new google.maps.Circle({
-        strokeColor: "#FF0000",
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: "#FF0000",
-        fillOpacity: 0.35,
-        map: map,
-        center: position,
-        radius: 6000,
-      });
-      return pop_Circle;
-
     }
 
     function draw_pop(data,datalinks) {
@@ -556,10 +607,8 @@
                 var paths = data[b].Paths;
                 var newnode = new Node(asnnumber, as_name, city, latLng, paths);
                 pop_nodes.push(newnode);
-                //marker = makeMarker(latLng, data[b].ASN, city, "#F00", paths.length, paths);    //makes marker with map==null so it does not show
-                circle = makeCircle(latLng, data[b].ASN, city);
-                circles.push(circle);
-                //pop_markers.push(marker);
+                marker = makePOPmarker(latLng, data[b].ASN);    //makes marker with map==null so it does not show
+                pop_markers.push(marker);
           }
           var p;
           var num_links = 0;
@@ -583,7 +632,7 @@
                   source,target
                 ];
               var new_link = new Link(source, target);
-              linkLine = makePolyline(flightPlanCoordinates, '#FF0000');
+              linkLine = makePolyline(flightPlanCoordinates, '#3a00cc');
               pop_links.push(linkLine);
               num_links = num_links+1;
           }
@@ -605,7 +654,8 @@
                 var asn_list = [];
                 for(var i=0; i<pop_nodes.length; i++){
                   if(city==pop_nodes[i].city){
-                    asn_list.push(pop_nodes[i].as_name+" ("+pop_nodes[i].asn_number+")");
+                    //asn_list.push(pop_nodes[i].as_name+" ("+pop_nodes[i].asn_number+")");
+                    asn_list.push([pop_nodes[i].as_name, pop_nodes[i].asn_number]);
                   }
                 }
                 var newnode = new CityNode(city, asn_list, latLng);
@@ -651,8 +701,8 @@
           city_markers[i].setMap(map);
         }
       }else{
-        for (let i = 0; i < circles.length; i++) {
-          circles[i].setMap(map);
+        for (let i = 0; i < pop_markers.length; i++) {
+          pop_markers[i].setMap(map);
         }
       }
     }
@@ -674,17 +724,11 @@
       setMapOnLinks(null, nodeType, links_list);
     }
 
-    // var infowindow = new google.maps.InfoWindow({
-    //   content: 'Change the zoom level',
-    //   position: new google.maps.LatLng(34.5085, 8.7832),
-    // });
-    // infowindow.open(map);
-
     //listener for zoom event changes
     var previousZoom = map.getZoom();
     map.addListener('zoom_changed', function() {
       //infowindow.setContent('Zoom: ' + map.getZoom());
-      if(!inViewRoutes){    //only re-render when view routes mode is off
+      if(!inViewRoutes && !inViewPOP){    //only re-render when view routes or view pop mode is off
         if(map.getZoom()>=7){   //zoomed in
           clearMarkers("City");
           clearLinks("City", city_links);
@@ -714,9 +758,13 @@
         }, 20);
     }
 
+    //button listeners
+    document.getElementById("menu-routes").addEventListener("click", viewRoutes);
+    document.getElementById("view_pop").addEventListener("click", viewPOP);
+    document.getElementById("clear").addEventListener("click", clear);
+
     //create the dropdown for the cities with source ASN's
     var cityLinksCleared = false;
-    document.getElementById("menu-routes").addEventListener("click", viewRoutes);
     //set the dropdown list options as all the cities available
     for(var i=0; i<data.length; i++){
       if(data[i]['Paths'].length>0){
@@ -728,14 +776,19 @@
     }
 
     //respond to changes in the city select drop down by creating the ASN dropdown
-    var asn; var city; var sourceMarker;
+    var asn; var selected_city; var sourceMarker;
     document.getElementById("citySelect").addEventListener("change", ()=>{
       x = document.getElementById("citySelect");
       document.getElementById('asnSelect').innerText = null;
       document.getElementById("asnSelection").style.display = "inline";
       //get all asns that are in that city and add them to the ASN dropdown
-      city = x.value;
-      sourceMarker = changeMarker(city);   //change the marker of the source city
+      selected_city = x.value;
+      sourceMarker = changeMarker(selected_city);   //change the marker of the source city
+      asnDropdown(selected_city);
+    })
+
+    //function to populate the asn select with options
+    function asnDropdown(city){
       var option  = document.createElement("option");   //create the default option in the dropdown
       option.text = "ASN";
       option.setAttribute("selected", "selected");
@@ -748,49 +801,127 @@
           document.getElementById("asnSelect").add(option);
         }
       }
-    })
+    }
+
+    //function to draw paths or view pop when asn is selected
+    function asnSelected(city){
+      x = document.getElementById("asnSelect");
+      if(inViewRoutes){
+        info_wind = returnPopup(x.value, city);
+        info_wind.open(map, sourceMarker);
+        infoWindows.push(info_wind);
+        //look for the specific node with that asn and city
+        for(var i=0; i<pop_nodes.length; i++){
+          if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
+            //viewed_sources.push(i);
+            drawPaths(pop_nodes[i].paths, "City");
+          }
+        }
+      }else if(inViewPOP){
+        //look for all the nodes with that asn
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;
+        for(var i=0; i<city_nodes.length; i++){
+          for(var j=0; j<city_nodes[i].asn_list.length; j++){
+            if(x.value==city_nodes[i].asn_list[j][1]){
+              city_markers[i].setIcon(null);
+              viewed_pops.push(city_markers[i]);
+              var info_wind = returnPopup(x.value, city_nodes[i].city);
+              info_wind.open(map, city_markers[i]);
+              infoWindows.push(info_wind);
+            }
+          }
+        }
+      }
+    }
 
     //respond to changes in the asn select drop down by drawing the paths
     document.getElementById("asnSelect").addEventListener("change", ()=>{
-      x = document.getElementById("asnSelect");
-      info_wind = returnPopup(x.value, city);
-      info_wind.open(map, sourceMarker);
-      infoWindows.push(info_wind);
-      //look for the specific node with that asn and city
-      for(var i=0; i<pop_nodes.length; i++){
-        if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
-          //viewed_sources.push(i);
-          drawPaths(pop_nodes[i].paths, "City");
-        }
-      }
+      asnSelected(selected_city);
     })
 
     //respond to the view routes button being toggled
     var inViewRoutes = false;
     function viewRoutes() {
       var dropdown = document.getElementById("citySelection");
+      var clear = document.getElementById("clear");
       if(cityLinksCleared==false){
         map.setZoom(4);
         clearLinks("City", city_links);
         document.getElementById("menu-routes").innerHTML = "Exit View Routes";
         dropdown.style.display = "inline";
+        clear.style.visibility = "visible";    //put the clear button
         cityLinksCleared = true;
         inViewRoutes = true;
+        document.getElementById("view_pop").disabled = true;    //disable the view pop button
+        $('.alert').show();
       }else{
         map.setZoom(4);   //restore zoom level to default 4
         previousZoom=4;
         setMapOnLinks(map, "City", city_links);   //load city level nodes
         document.getElementById("menu-routes").innerHTML = "View Routes";
         dropdown.style.display = "none";
+        clear.style.visibility = "hidden";    //remove the clear button
         document.getElementById("asnSelection").style.display = "none";
+        document.getElementById("view_pop").disabled = false;    //enable the view pop button
         cityLinksCleared = false;
         inViewRoutes = false;
         city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
         infoWindows.forEach(closeWindow);   //remove all info windows
         infoWindows.length = 0;   //clear the infoWindows
         clearLinks("City", viewed_sources);
+        viewed_sources.length = 0;
+      } 
+    }
+
+    //respond to the view pop button being toggled
+    var inViewPOP = false;
+    function viewPOP() {
+      var dropdown = document.getElementById("asnSelection");
+      var clear = document.getElementById("clear");
+      if(inViewPOP==false){
+        map.setZoom(3);
+        document.getElementById("view_pop").innerHTML = "Exit View PoP";
+        document.getElementById("menu-routes").disabled = true;    //disable the view routes button
+        dropdown.style.display = "inline";
+        clear.style.visibility = "visible";    //put the clear button
+        inViewPOP = true;
+        //populate the dropdown with asn
+        for(var i=0; i<data.length; i++){
+          var asn = data[i]['ASN'];
+          var option = document.createElement("option");
+          option.text = asn;
+          document.getElementById("asnSelect").add(option);
+        }
+      }else{
+        map.setZoom(4);   //restore zoom level to default 4
+        document.getElementById("view_pop").innerHTML = "View PoP";
+        document.getElementById("menu-routes").disabled = false;    //enable the view pop button
+        dropdown.style.display = "none";
+        clear.style.visibility = "hidden";    //put the clear button
+        viewed_pops.forEach(resetMarker);    //reset all changed markers to blue circles
+        document.getElementById("asnSelection").style.display = "none";
+        inViewPOP = false;
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+      } 
+    }
+
+    //clear button listener
+    function clear(){
+      //if in view routes then only clear info windows and routes
+      if(inViewRoutes){
+        map.setZoom(4);
+        city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+        clearLinks("City", viewed_sources);
+        viewed_sources.length = 0;
+      }else if(inViewPOP){    //reset all markers to original and remove info windows
+        viewed_pops.forEach(resetMarker);
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
       }
-      
     }
 
     //function to change the icon for a city node marker to default google reverse teardrop marker
@@ -805,14 +936,14 @@
       }
     }
 
-    //function to change icon for city node marker to the blue circle
+    //function to change icon for city node marker to the blue down pointing arrow
     function resetMarker(marker){
       const icon = {
           path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          scale: 2.5,
-          fillColor: "3a00cc",
-          fillOpacity: 0.4,
-          strokeWeight: 0.4
+          scale: 4,
+          fillColor: "#3a00cc",
+          fillOpacity: 0.7,
+          strokeWeight: 0.6
       }
       marker.setIcon(icon);
     }
@@ -820,11 +951,6 @@
     //function to close an info window
     function closeWindow(infowindow){
       infowindow.close();
-    }
-
-    //function to redraw paths of pop_nodes[i]
-    function redrawPaths(index){
-      drawPaths(pop_nodes[index].paths, "POP");
     }
 
 
