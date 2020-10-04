@@ -3,7 +3,7 @@ import random
 
 import requests
 
-import MongoOperations as mo
+from app import MongoOperations as mo
 
 """
 get all active probes in Africa
@@ -132,13 +132,17 @@ def post_ping_all_ip_test(ip_Africa_address):
                 r = requests.post(url, data=data, headers=headers)
 
             except requests.exceptions.RequestException as e:
-                return "Request failed"
+                # post was not successful
+                pass
+                # return "Request failed"
             res = json.loads(r.text)
             if "OK" == res['StartPingTestResult']['Status']['StatusText']:
                 test_res.append(res['StartPingTestResult']['TestID'])
             else:
-                print(res)
-                print("failed")
+                # the trace was not successful
+                pass
+                # print(res)
+                # print("failed")
             numb_of_dest += 1
     ping_test_id = test_res
 
@@ -166,9 +170,6 @@ def get_ping_all_result():
         res = json.loads(r.text)
         if "200" == res['ResponseStatus']['StatusCode']:
             mo.upload_ping_to_mongo("SpeedChecker", res)
-            # s = "files/ping/ping" + testID + ".txt"
-            # with open(s, 'w') as outfile:
-            #     json.dump(res, outfile)
 
 
 """
@@ -251,11 +252,11 @@ def post_trace_all_ip_test(ip_Africa_address):
             except requests.exceptions.RequestException as e:
                 return "Request failed"
             res = json.loads(r.text)
-            #print(res)
+            # print(res)
             if "OK" == res['StartTracertTestResult']['Status']['StatusText']:
                 test_res.append(res['StartTracertTestResult']['TestID'])
             else:
-                #print(res)
+                # print(res)
                 print("failed")
             numb_of_dest += 1
 
@@ -289,5 +290,3 @@ def get_trace_all_result():
             res = json.loads(r.text)
             if "200" == res['ResponseStatus']['StatusCode']:
                 mo.upload_to_mongo("SpeedChecker", res)
-
-

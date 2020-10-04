@@ -14,6 +14,10 @@ import pyasn
 
 Africa_asn = []
 
+"""
+Scrapes African asns from ipinfo.io
+"""
+
 
 def scrape_africa_asn():
     global Africa_asn
@@ -43,10 +47,16 @@ def scrape_africa_asn():
     Africa_asn = asn
     driver.quit()
 
+"""
+from the asns, gets ip address to be used for doing traceroute and ping measurements
+"""
+
 
 def get_random_africa_ip():
     # Initialize module and load IP to ASN database
-    asndb = pyasn.pyasn('files/ipasn.dat')
+    projectroot = os.path.realpath((os.path.dirname(__file__)))
+    path = os.path.join(projectroot, 'files/ipasn.dat')
+    asndb = pyasn.pyasn(path)
     netarr = []
 
     for asn1 in Africa_asn:

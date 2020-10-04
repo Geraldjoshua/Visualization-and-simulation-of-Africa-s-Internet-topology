@@ -8,7 +8,7 @@ from ripe.atlas.cousteau import (
     AtlasResultsRequest
 )
 
-import MongoOperations as mo
+from app import MongoOperations as mo
 
 "note: use pygal to visualize data"
 
