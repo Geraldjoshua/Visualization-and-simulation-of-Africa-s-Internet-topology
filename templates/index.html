@@ -111,17 +111,9 @@
         box-shadow: 0 0 5px 2px "#fff";
         overflow: auto;
       }
-      .labels {
-         color: red;
-         background-color: white;
-         font-family: "Lucida Grande", "Arial", sans-serif;
-         font-size: 10px;
-         font-weight: bold;
-         text-align: center;
-         width: 40px;     
-         border: 2px solid black;
-         white-space: nowrap;
-       }
+      #clear{
+        visibility: hidden;
+      }
     </style>
 </head>
 <body>
@@ -146,6 +138,7 @@
                         <a href=simulation><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
                         <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
                         <a href=#><button class="btn btn-primary" id="view_pop">View PoP</button></a>
+                        <a href=#><button class="btn btn-primary" id="clear">Clear</button></a>
                     </div>
                     <div display="inline" id="citySelection">
                       <label for="citySelect">Select source city:</label>
@@ -390,6 +383,7 @@
     let city_links = [];
     let pop_links = [];
     let viewed_sources = [];
+    let viewed_pops = [];
     let infoWindows = [];
     let asnInfoWindows = [];
     let circles = [];
@@ -731,7 +725,7 @@
     var previousZoom = map.getZoom();
     map.addListener('zoom_changed', function() {
       //infowindow.setContent('Zoom: ' + map.getZoom());
-      if(!inViewRoutes){    //only re-render when view routes mode is off
+      if(!inViewRoutes && !inViewPOP){    //only re-render when view routes or view pop mode is off
         if(map.getZoom()>=7){   //zoomed in
           clearMarkers("City");
           clearLinks("City", city_links);
@@ -761,10 +755,13 @@
         }, 20);
     }
 
-    //create the dropdown for the cities with source ASN's
-    var cityLinksCleared = false;
+    //button listeners
     document.getElementById("menu-routes").addEventListener("click", viewRoutes);
     document.getElementById("view_pop").addEventListener("click", viewPOP);
+    document.getElementById("clear").addEventListener("click", clear);
+
+    //create the dropdown for the cities with source ASN's
+    var cityLinksCleared = false;
     //set the dropdown list options as all the cities available
     for(var i=0; i<data.length; i++){
       if(data[i]['Paths'].length>0){
@@ -818,6 +815,10 @@
           for(var j=0; j<city_nodes[i].asn_list.length; j++){
             if(x.value==city_nodes[i].asn_list[j][1]){
               city_markers[i].setIcon(null);
+              viewed_pops.push(city_markers[i]);
+              var info_wind = returnPopup(x.value, city_nodes[i].city);
+              info_wind.open(map, city_markers[i]);
+              infoWindows.push(info_wind);
             }
           }
         }
@@ -829,37 +830,46 @@
     var inViewRoutes = false;
     function viewRoutes() {
       var dropdown = document.getElementById("citySelection");
+      var clear = document.getElementById("clear");
       if(cityLinksCleared==false){
         map.setZoom(4);
         clearLinks("City", city_links);
         document.getElementById("menu-routes").innerHTML = "Exit View Routes";
         dropdown.style.display = "inline";
+        clear.style.visibility = "visible";    //put the clear button
         cityLinksCleared = true;
         inViewRoutes = true;
+        document.getElementById("view_pop").disabled = true;    //disable the view pop button
       }else{
         map.setZoom(4);   //restore zoom level to default 4
         previousZoom=4;
         setMapOnLinks(map, "City", city_links);   //load city level nodes
         document.getElementById("menu-routes").innerHTML = "View Routes";
         dropdown.style.display = "none";
+        clear.style.visibility = "hidden";    //remove the clear button
         document.getElementById("asnSelection").style.display = "none";
+        document.getElementById("view_pop").disabled = false;    //enable the view pop button
         cityLinksCleared = false;
         inViewRoutes = false;
         city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
         infoWindows.forEach(closeWindow);   //remove all info windows
         infoWindows.length = 0;   //clear the infoWindows
         clearLinks("City", viewed_sources);
+        viewed_sources.length = 0;
       } 
     }
 
-    //respond to the view routes button being toggled
+    //respond to the view pop button being toggled
     var inViewPOP = false;
     function viewPOP() {
       var dropdown = document.getElementById("asnSelection");
+      var clear = document.getElementById("clear");
       if(inViewPOP==false){
-        map.setZoom(4);
+        map.setZoom(3);
         document.getElementById("view_pop").innerHTML = "Exit View PoP";
+        document.getElementById("menu-routes").disabled = true;    //disable the view routes button
         dropdown.style.display = "inline";
+        clear.style.visibility = "visible";    //put the clear button
         inViewPOP = true;
         //populate the dropdown with asn
         for(var i=0; i<data.length; i++){
@@ -870,12 +880,33 @@
         }
       }else{
         map.setZoom(4);   //restore zoom level to default 4
-        previousZoom=4;
         document.getElementById("view_pop").innerHTML = "View PoP";
+        document.getElementById("menu-routes").disabled = false;    //enable the view pop button
         dropdown.style.display = "none";
+        clear.style.visibility = "hidden";    //put the clear button
+        viewed_pops.forEach(resetMarker);    //reset all changed markers to blue circles
         document.getElementById("asnSelection").style.display = "none";
         inViewPOP = false;
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
       } 
+    }
+
+    //clear button listener
+    function clear(){
+      //if in view routes then only clear info windows and routes
+      if(inViewRoutes){
+        map.setZoom(4);
+        city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+        clearLinks("City", viewed_sources);
+        viewed_sources.length = 0;
+      }else if(inViewPOP){    //reset all markers to original and remove info windows
+        viewed_pops.forEach(resetMarker);
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+      }
     }
 
     //function to change the icon for a city node marker to default google reverse teardrop marker
