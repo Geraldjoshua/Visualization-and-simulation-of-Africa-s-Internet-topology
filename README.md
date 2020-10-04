@@ -1,6 +1,6 @@
 # Visaulization-and-simulation-of-Africa-s-Internet-topology
 
-**_We are using three internet measurement platforms to conduct internet measurements in Africa to obtain internet topology and visualize it on a map._**
+**_We are using three internet measurement platforms to conduct internet measurements in Africa to obtain internet topology that we can visualize and simulate different scenarios on a map for research and learning purpose._**
 
 
 
