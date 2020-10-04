@@ -821,20 +821,20 @@ def regenerate_links(platform):
         print("done. getting asn locations for RIPE")
         get_asn_location("RIPE")
 
-def main():
-    # drop_mongo_collection("SpeedChecker")
-    # get_linked_asn("SpeedChecker")
-    # print("getting paths")
-    # get_asn_location("SpeedChecker")
-    # upload_to_mongo("RIPE")
-    # # delete_empty_traces("RIPE")
-    regenerate_links("SpeedChecker")
-    regenerate_links("CAIDA")
-    regenerate_links("RIPE")
-    data = get_topology_data("RIPE")
-    print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
-    # for node in data[0]:
-    #     print(node)
+# def main():
+#     # drop_mongo_collection("SpeedChecker")
+#     # get_linked_asn("SpeedChecker")
+#     # print("getting paths")
+#     # get_asn_location("SpeedChecker")
+#     # upload_to_mongo("RIPE")
+#     # # delete_empty_traces("RIPE")
+#     regenerate_links("SpeedChecker")
+#     regenerate_links("CAIDA")
+#     regenerate_links("RIPE")
+#     data = get_topology_data("RIPE")
+#     print("number of links:",len(data[0]), "number of nodes:", len(data[1]), "number of cities:", len(data[2]))
+#     # for node in data[0]:
+#     #     print(node)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

@@ -110,9 +110,27 @@
         opacity: 0.85;
         box-shadow: 0 0 5px 2px "#fff";
         overflow: auto;
+        border: 2px solid black;
       }
       #clear{
         visibility: hidden;
+        margin-left: 10px;
+        margin-right: 10px;
+      }
+      .alert{
+        display: none;
+        position: absolute; 
+        top: 0px;
+      }
+      #menu-routes, #view_pop, #simulation{
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+      .btn-default{ 
+        background-color: #6c757d;
+        color:#FFF;
+        border-color: #2F3E48;
+        margin-bottom: 5px;
       }
     </style>
 </head>
@@ -123,10 +141,10 @@
         <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
             <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                 <li class="nav-item active">
-                    <label for="platforms">platform chosen: speedchecker</label>
+                    <label for="platforms">Data from: Speedchecker</label>
                     <div class="btn-group" id="platforms">
                       <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        choose platforms
+                        Choose measuremnt platform
                       </button>
                       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                         <a class="dropdown-item" href="speed">Speedchecker</a>
@@ -135,10 +153,10 @@
                       </div>
                     </div>
                     <div class="btn-group">
-                        <a href=simulation><button class="btn btn-primary" id="menu-toggle">Simulation</button></a>
-                        <a href=#><button class="btn btn-primary" id="menu-routes">View Routes</button></a>
-                        <a href=#><button class="btn btn-primary" id="view_pop">View PoP</button></a>
-                        <a href=#><button class="btn btn-primary" id="clear">Clear</button></a>
+                        <a href=simulation><button class="btn btn-default btn-sm" id="menu-toggle">Simulation</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="menu-routes">View Routes</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="view_pop">View PoP</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="clear">Clear</button></a>
                     </div>
                     <div display="inline" id="citySelection">
                       <label for="citySelect">Select source city:</label>
@@ -162,6 +180,10 @@
   </div>
     <div class="container-fluid" id="tooltip" style="position: relative;">
         <div id="map" style="width:100%;height:700px;"></div>
+        <div class="alert alert-info alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                  Select City from dropdown or click on any node on the map.
+        </div>
         <div id="infoBox">
           <p id="text">Zoom in and click on an icon to display information.</p>
         </div>
@@ -386,14 +408,6 @@
     let viewed_pops = [];
     let infoWindows = [];
     let asnInfoWindows = [];
-    let circles = [];
-
-    // window.onload = ready(data,datalinks);
-    // function ready(data,datalinks) {
-
-    //     draw(data,datalinks);
-
-    // }
 
     window.onload = ready_city(city_data, datalinks);
     function ready_city(city_data,datalinks) {
@@ -407,12 +421,19 @@
 
     }
 
-    function returnPopup(asn, city, latLng=null){
-      const contentString = 
-          '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
+    function returnPopup(asn=null, city, latLng=null){
+      var contentString;
+      if(asn==null){
+        contentString = 
+          '<div><p>City:'+city+'</p></div>';
+      }else{
+        contentString = 
+        '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
+      }
+      
       if(latLng==null){
         const infowindow = new google.maps.InfoWindow({
-          content: contentString
+          content: contentString,
         });
         return infowindow;
       }else{
@@ -499,7 +520,7 @@
     function makeMarker(position, asnList, city, color, isSource, paths=null, map=null){ 
       icon = {
             path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-            scale: 3,
+            scale: 4,
             fillColor: color,
             fillOpacity: 0.7,
             strokeWeight: 0.6
@@ -515,7 +536,14 @@
         // info_wind.open(map, marker);
         text = "<div><p>City "+city.toString()+"</p></div>";
         changeInfoBox(asnList, city);
-        updateInfoWindow(text, position);
+        updateInfoWindow("City: "+city , position);
+
+        if(inViewRoutes){
+          document.getElementById('asnSelect').innerText = null;
+          document.getElementById("asnSelection").style.display = "inline";
+          selected_city = city;
+          asnDropdown(selected_city);
+        }
       });       
       return marker;
       //markers.push(marker);
@@ -564,22 +592,6 @@
       return flightPath;
     }
 
-    function makeCircle(position, asn, city, map=null){
-      // Add the circle for this city to the map.
-      const pop_Circle = new google.maps.Circle({
-        strokeColor: "#FF0000",
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: "#FF0000",
-        fillOpacity: 0.35,
-        map: map,
-        center: position,
-        radius: 6000,
-      });
-      return pop_Circle;
-
-    }
-
     function draw_pop(data,datalinks) {
           var b;
           //data = nodes, datalinks = links
@@ -596,8 +608,6 @@
                 var newnode = new Node(asnnumber, as_name, city, latLng, paths);
                 pop_nodes.push(newnode);
                 marker = makePOPmarker(latLng, data[b].ASN);    //makes marker with map==null so it does not show
-                // circle = makeCircle(latLng, data[b].ASN, city);
-                // circles.push(circle);
                 pop_markers.push(marker);
           }
           var p;
@@ -692,7 +702,6 @@
         }
       }else{
         for (let i = 0; i < pop_markers.length; i++) {
-          //circles[i].setMap(map);
           pop_markers[i].setMap(map);
         }
       }
@@ -714,12 +723,6 @@
     function clearLinks(nodeType, links_list) {
       setMapOnLinks(null, nodeType, links_list);
     }
-
-    // var infowindow = new google.maps.InfoWindow({
-    //   content: 'Change the zoom level',
-    //   position: new google.maps.LatLng(34.5085, 8.7832),
-    // });
-    // infowindow.open(map);
 
     //listener for zoom event changes
     var previousZoom = map.getZoom();
@@ -773,14 +776,19 @@
     }
 
     //respond to changes in the city select drop down by creating the ASN dropdown
-    var asn; var city; var sourceMarker;
+    var asn; var selected_city; var sourceMarker;
     document.getElementById("citySelect").addEventListener("change", ()=>{
       x = document.getElementById("citySelect");
       document.getElementById('asnSelect').innerText = null;
       document.getElementById("asnSelection").style.display = "inline";
       //get all asns that are in that city and add them to the ASN dropdown
-      city = x.value;
-      sourceMarker = changeMarker(city);   //change the marker of the source city
+      selected_city = x.value;
+      sourceMarker = changeMarker(selected_city);   //change the marker of the source city
+      asnDropdown(selected_city);
+    })
+
+    //function to populate the asn select with options
+    function asnDropdown(city){
       var option  = document.createElement("option");   //create the default option in the dropdown
       option.text = "ASN";
       option.setAttribute("selected", "selected");
@@ -793,10 +801,10 @@
           document.getElementById("asnSelect").add(option);
         }
       }
-    })
+    }
 
-    //respond to changes in the asn select drop down by drawing the paths
-    document.getElementById("asnSelect").addEventListener("change", ()=>{
+    //function to draw paths or view pop when asn is selected
+    function asnSelected(city){
       x = document.getElementById("asnSelect");
       if(inViewRoutes){
         info_wind = returnPopup(x.value, city);
@@ -811,6 +819,8 @@
         }
       }else if(inViewPOP){
         //look for all the nodes with that asn
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;
         for(var i=0; i<city_nodes.length; i++){
           for(var j=0; j<city_nodes[i].asn_list.length; j++){
             if(x.value==city_nodes[i].asn_list[j][1]){
@@ -823,7 +833,11 @@
           }
         }
       }
-      
+    }
+
+    //respond to changes in the asn select drop down by drawing the paths
+    document.getElementById("asnSelect").addEventListener("change", ()=>{
+      asnSelected(selected_city);
     })
 
     //respond to the view routes button being toggled
@@ -840,6 +854,7 @@
         cityLinksCleared = true;
         inViewRoutes = true;
         document.getElementById("view_pop").disabled = true;    //disable the view pop button
+        $('.alert').show();
       }else{
         map.setZoom(4);   //restore zoom level to default 4
         previousZoom=4;
@@ -921,14 +936,14 @@
       }
     }
 
-    //function to change icon for city node marker to the blue circle
+    //function to change icon for city node marker to the blue down pointing arrow
     function resetMarker(marker){
       const icon = {
           path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          scale: 2.5,
-          fillColor: "3a00cc",
-          fillOpacity: 0.4,
-          strokeWeight: 0.4
+          scale: 4,
+          fillColor: "#3a00cc",
+          fillOpacity: 0.7,
+          strokeWeight: 0.6
       }
       marker.setIcon(icon);
     }
@@ -936,11 +951,6 @@
     //function to close an info window
     function closeWindow(infowindow){
       infowindow.close();
-    }
-
-    //function to redraw paths of pop_nodes[i]
-    function redrawPaths(index){
-      drawPaths(pop_nodes[index].paths, "POP");
     }
 
 
