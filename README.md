@@ -4,9 +4,11 @@
 
 
 
-* still in development stages but can be found here: https://africa-s-internet-topology.herokuapp.com/
+* A live web application is still development stages but can be found here: https://africa-s-internet-topology.herokuapp.com/
 
-* to **run**: outside the app folder from command line: **python wsgi.py**
+* to **run** web app locally, outside the app folder from command line: run **python wsgi.py**
+
+* a local host link of where the app is ran will appear, click to see the loacally ran web app.
 
 * make sure you install all requirements: run **pip install -r requirements.txt**
 
