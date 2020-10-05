@@ -11,10 +11,8 @@
     <!--ref to css-->
     <!--    <script src="{{ url_for('static', filename='functionality.js') }}" type="text/javascript"></script>-->
     <script src="https://d3js.org/d3.v4.min.js"></script>
-    <script type="text/javascript" src="{{ url_for('static', filename='static/routing.js')}}"></script>
     <script src="https://d3js.org/topojson.v1.min.js"></script>
-    <script src="//maps.googleapis.com/maps/api/js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
+    <script src="//maps.googleapis.com/maps/api/js?key=AIzaSyAdUAqT9PRkg6x1mswnL-USnLjpgqDLxaA&callback"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
     <style>
@@ -221,28 +219,31 @@ function initmap(){
     });
     }
 
-// Load the station data. When the data comes back, create an overlay.
-d3.csv("static/asn_loc.csv", function(data) {
-    nodes.push(data);
-    console.log(data);
-    console.log("hry");
-    //draw(data)
+<!--&lt;!&ndash;// Load the station data. When the data comes back, create an overlay.-->
+<!--d3.csv("static/asn_loc.csv", function(data) {-->
+<!--    nodes.push(data);-->
+<!--    console.log(data);-->
+<!--    console.log("hry");-->
+<!--    //draw(data)-->
 
-    d3.csv("static/asn_links.csv", function(datalinks) {
-    links.push(datalinks);
-    console.log(links);
+<!--    d3.csv("static/asn_links.csv", function(datalinks) {-->
+<!--    links.push(datalinks);-->
+<!--    console.log(links);-->
 
-    draw(data,datalinks);
-    console.log(nodes);
-    });
+<!--    draw(data,datalinks);-->
+<!--    console.log(nodes);-->
+<!--    });-->
 
-});
+<!--});-->
 
-d3.csv("static/asn_links.csv", function(data) {
-});
+<!--d3.csv("static/asn_links.csv", function(data) {-->
+<!--});&ndash;&gt;-->
 
-
-
+var dat = {{data|tojson}}
+dataorig = dat[1];
+datalinksrew = dat[0];
+nodes.push(dataorig);
+links.push(datalinksrew);
 
 console.log(links);
 
@@ -250,458 +251,16 @@ console.log(links);
 console.log(nodes)
 var k;
 
+
+
 var nodes_red = [] //Nodes Array
-
-function draw(data,datalinks) {
- initmap();
- asn_locations = data;
- asn_links = datalinks;
-  //console.log(datalinks);
-  //console.log(data);
-
-      var b;
-      for(b =0; b<data.length; b++){
-            var lat= data[b].Latitude;
-            var long= data[b].Longitude;
-            var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
-          //var contentString = '<div id="content"><h1 id="here">ASN Number {data[b].ASN} </h1><p> Longitude: {long} Latitude: {lat} </p></div>';
-
-            nodes[b] = latLng;
-            var  asnnumber = data[b].ASN;
-            //document.getElementById("here").innerHTML = "ASN Number" + asnnumber;
-
-            var newnode = new Node(asnnumber,latLng);
-            nodes_red.push(newnode);
-            var marker = new google.maps.Marker({
-            position: latLng,
-            sName: data[b].ASN,
-            map: map,
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 2.5,
-                fillColor: "#F00",
-                fillOpacity: 0.4,
-                strokeWeight: 0.4
-            },
-         });
-         const infowindow = new google.maps.InfoWindow({
-          content: "<p>Marker Location:" + marker.getPosition() + "Asnnumber:" + asnnumber +"</p>"
-        });
-        google.maps.event.addListener(marker, "click", () => {
-          infowindow.open(map, marker);
-        });
-
-       // console.log("Am here");
-      }
-      console.log(nodes);
-      console.log(datalinks);
-      var p; var n =0;
-      for(p=0; p<datalinks.length; p++){
-      var source; var target; var j;
-           for(j=0; j<nodes_red.length;j++){
-             console.log("nikooona");
-                if(datalinks[p].Source == nodes_red[j].asn_number){
-                  source = nodes_red[j].pos;
-                //  console.log(source)
-                }
-
-                    if(datalinks[p].Target == nodes_red[j].asn_number){
-                      target = nodes_red[j].pos;
-                    }
-
-           }
-
-          //console.log(source);
-           //console.log(target);
-           var newLink = new Link(source,target);
-           links[n] = newLink;
-
-            var flightPlanCoordinates = [
-                source,target
-              ];
-              var flightPath = new google.maps.Polyline({
-                path: flightPlanCoordinates,
-                geodesic: true,
-                strokeColor: '#FF0000',
-                strokeOpacity: 1.0,
-                strokeWeight: 1
-              });
-
-              flightPath.setMap(map);
-
-        n+=1;
-      }
-      console.log(links);
-        fav();
-
-  }
-
-  function redraw(nodesz, linksz){
-  console.log(linksz);
-  fav();
-   initmap();
-   var b;
-      for(b =0; b<nodesz.length; b++){
-            var lat= nodesz[b].pos.lat;
-            var long= nodesz[b].pos.lng;
-            var  asnnumber = nodesz[b].asn_number;
-            var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
-            var marker;
-            if(asnnumber.substring(0, 3) == "IXP"){
-
-                var letter = String.fromCharCode("X".charCodeAt(0));
-                var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
-                marker = new google.maps.Marker({
-                position: latLng,
-                sName: newNode.ASN,
-                map: map,
-                icon: "http://maps.google.com/mapfiles/marker" + letter + ".png",
-                scale: 1.5
-                });
-            }
-            else{
-                    marker = new google.maps.Marker({
-                    position: latLng,
-                    map: map,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 2.5,
-                        fillColor: "#F00",
-                        fillOpacity: 0.4,
-                        strokeWeight: 0.4
-                    },
-                });
-        }
-         const infowindow = new google.maps.InfoWindow({
-          content: "<p>Marker Location:" + marker.getPosition() + "Asnnumber:" + asnnumber +"</p>"
-        });
-        google.maps.event.addListener(marker, "click", () => {
-          infowindow.open(map, marker);
-        });
-
-       // console.log("Am here");
-      }
-
-      var bc;
-      for(bc=0; bc<linksz.length; bc++){
-       var latLng1,latLng2;
-      if(linksz[bc].source != null && linksz[bc].target !=null){
-      latLng1 = {lat: parseFloat(linksz[bc].source.lat), lng: parseFloat(linksz[bc].source.lng)};
-      latLng2 = {lat: parseFloat(linksz[bc].target.lat), lng: parseFloat(linksz[bc].target.lng)};
-       }
-       else{
-       continue;
-       }
-       //console.log(latLng1);
-       //console.log(latLng2);
-       var flightPlanCoordinates = [
-                latLng1,latLng2
-              ];
-              var flightPath = new google.maps.Polyline({
-                path: flightPlanCoordinates,
-                geodesic: true,
-                strokeColor: '#FF0000',
-                strokeOpacity: 1.0,
-                strokeWeight: 1
-              });
-
-              flightPath.setMap(map);
-
-      }
-
-
-
-  }
-
-  function animateCircle(line) {
-    var count = 0;
-    window.setInterval(function() {
-      count = (count + 1) % 200;
-
-      var icons = line.get('icons');
-      icons[0].offset = (count / 2) + '%';
-      line.set('icons', icons);
-  }, 20);
-}
-
-
-
-function openFormAC() {
-    document.getElementById("myFormAC").style.display = "block";
-}
-
-function closeFormAC() {
-    document.getElementById("myFormAC").style.display = "none";
-}
-function openFormSim() {
-    document.getElementById("simulationForm").style.display = "block";
-}
-
-function closeFormSim() {
-    document.getElementById("simulationForm").style.display = "none";
-}
-function openFormAN() {
-    document.getElementById("myFormAN").style.display = "block";
-}
-
-function closeFormAN() {
-    document.getElementById("myFormAN").style.display = "none";
-}
-function openFormDC() {
-    document.getElementById("myFormDC").style.display = "block";
-}
-function closeFormDC() {
-    document.getElementById("myFormDC").style.display = "none";
-}
-
-function openFormDN() {
-    document.getElementById("myFormDN").style.display = "block";
-}
-function closeFormDN() {
-    document.getElementById("myFormDN").style.display = "none";
-}
-
-function addIXPNode() {
-    var lati = document.getElementById("LatName1").value;
-    var long = document.getElementById("LongT1").value;
-    console.log(lati)
-    console.log(long)
-    newNode = {
-        Name: "IXP",
-        Long: parseFloat(long),
-        Lat: parseFloat(lati)
-    }
-
-    //nodes.push(newnode);
-     var latLng = {lat: parseFloat(lati), lng: parseFloat(long)};
-     nodes.push(latLng);
-     var IXP = "IXP";
-     var b = IXP.concat(IXPnumber.toString());
-     var nodepluspos = {IP:"", ASN: b, Longitude: long, Latitude: lati};
-     asn_locations.push(nodepluspos);
-     var newnode = new Node(b, latLng);
-     nodes.push(latLng);
-      nodes_red.push(newnode);
- <!--&lt;!&ndash;    //var letter = String.fromCharCode("X".charCodeAt(0));
-     // var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
-<!--     // var marker = new google.maps.Marker({-->
-<!--            position: latLng,-->
-<!--            sName: newNode.ASN,-->
-<!--            map: map,-->
-<!--            icon: "http://maps.google.com/mapfiles/marker" + letter + ".png",-->
-<!--            scale: 1.5-->
-<!--        });&ndash;&gt;&ndash;&gt;-->
-      redraw(nodes_red,links);
-      closeFormAN();
-      IXPnumber = IXPnumber+1;
-      console.log(nodes);
-
-}
-
-function addConnection() {
-    var location1 = document.getElementById("Location1").value;
-    var location2 = document.getElementById("Location2").value;
-    console.log(location1);
-    console.log(location2);
-
-    var loc1 = location1.split(',');
-    var loc2 = location2.split(',');
-
-    var latLng1 = {lat: parseFloat(loc1[0]), lng: parseFloat(loc1[1])};
-    var latLng2 = {lat: parseFloat(loc2[0]), lng: parseFloat(loc2[1])};
-    console.log(findNode(loc1[0],loc1[1]));
-    console.log(findNode(loc2[0],loc2[1]));
-    if(findNode(loc1[0],loc1[1]) && findNode(loc2[0],loc2[1])){
-    var newlink = new Link(latLng1,latLng2);
-    links.push(newlink);
-    var sourcenodenumber = loc1[2];
-    var targetnodenumber = loc2[2];
-    var link = {Source: sourcenodenumber, Target: targetnodenumber}
-    asn_links.push(link);
-<!--     var flightPlanCoordinates = [-->
-<!--                latLng1,latLng2-->
-<!--              ];-->
-<!--              var flightPath = new google.maps.Polyline({-->
-<!--                path: flightPlanCoordinates,-->
-<!--                geodesic: true,-->
-<!--                strokeColor: '#008000',-->
-<!--                strokeOpacity: 1.0,-->
-<!--                strokeWeight: 1-->
-<!--              });-->
-
-<!--              flightPath.setMap(map);-->
-
-            redraw(nodes_red,links);
-       }
-
-       else {
-        alert("Connection not already added. Add the connection first to proceed.");
-       }
-
-}
-
-function findNode(lat,long){
-    for (let index = 0; index < nodes.length; index++) {
-     // console.log("Am in here300000000");
-        //console.log(nodes[index].id);//trace
-        //console.log(id.lat)
-        //console.log(nodes[index])
-        var values = Object.values(nodes[index]);
-        //console.log(values)
-        if(values[0] == lat && values[1] == long) {
-            return true;
-            break;
-        }
-    }
-    return false;
-}
-
-function deleteNode(){
-console.log(nodes);
- var lati = document.getElementById("NodeLat1").value;
- var long = document.getElementById("NodeLongT1").value;
-  if(findNode(lati,long)){
-    for (let index = 0; index < nodes.length; index++) {
-     // console.log("Am in here300000000");
-        //console.log(nodes[index].id);//trace
-        //console.log(id.lat)
-        //console.log(nodes[index])
-        var values = Object.values(nodes[index]);
-        //console.log(values)
-        if(values[0] == lati && values[1] == long) {
-            //console.log(index);
-           // delete nodes[index];
-            nodes.splice(index,1);
-             var der;
-           for(der =0; der<links.length;der++){
-             // latLng1 = {lat: parseFloat(links[der].source.lat), lng: parseFloat(links[der].source.lng)};
-              //latLng2 = {lat: parseFloat(links[der].target.lat), lng: parseFloat(links[der].target.lng)};
-                if(links[der].source != null && links[der].target !=null){
-               if(lati == links[der].source.lat && long == links[der].source.lng || lati == links[der].target.lat && long == links[der].target.lng){
-               links.splice(der,1);
-               }}
-           }
-            console.log(nodes);
-            //Remove Links of the associated node.
-            redraw(nodes,links);
-            closeFormDN();
-        }
-    }
-
-  }
-  else {
-        alert("Nodes not already added. Add the nodes first to proceed.");
-        }
-
-}
-
-function deleteConnection(){
-
-   var location1 = document.getElementById("Loc1").value;
-    var location2 = document.getElementById("Loc2").value;
-    console.log(location1);
-    console.log(location2);
-
-    var loc1 = location1.split(',');
-    var loc2 = location2.split(',');
-
-    var latLng1 = {lat: parseFloat(loc1[0]), lng: parseFloat(loc1[1])};
-    var latLng2 = {lat: parseFloat(loc2[0]), lng: parseFloat(loc2[1])};
-    console.log(findNode(loc1[0],loc1[1]));
-    console.log(findNode(loc2[0],loc2[1]));
-    if(findNode(loc1[0],loc1[1]) && findNode(loc2[0],loc2[1])){
-        var index;
-        for(index=0; index<links.length; index++){
-        if(links[index].source !=null && links[index].source.lat == loc1[0]){
-        console.log(links[index]);
-        }
-        if(links[index].source !=null && links[index].target !=null && links[index].source.lat == loc1[0] && links[index].source.lng ==loc1[1] && links[index].target.lat ==loc2[0] && links[index].target.lng ==loc2[1]){
-         console.log(index);
-         links.splice(index,1);
-         console.log("dopeunit");
-         break;
-         }
-
-        }
-        redraw(nodes,links);
-
-    }
-
-    else {
-        alert("Connection not already added. Add the connection first to proceed.");
-       }
-
-
-
-}
-
-function simulationTraffic(){
-    var location1 = document.getElementById("sourceLocation").value;
-    var location2 = document.getElementById("destinationLocation").value;
-    var loc1 = location1.split(',');
-    var loc2 = location2.split(',');
-    var latLng1 = {lat: parseFloat(loc1[0]), lng: parseFloat(loc1[1])};
-    var latLng2 = {lat: parseFloat(loc2[0]), lng: parseFloat(loc2[1])};
-     const lineSymbol = {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          strokeColor: "#393"
-        };
-     var graph = addgraphNodes(asn_locations,asn_links);
-     var sourcenodenumber,targetnodenumber;
-     sourcenodenumber = loc1[2];
-     targetnodenumber = loc2[2];
-     var lineoptions = [];
-     console.log(graph);
-     var b = graph.Dijkstra(loc1[2],loc2[2]);
-     var index1,index;
-     document.getElementById('pathCost').innerHTML = 50
-     for(index1 =0; index1<b.length; index1++){
-         for(index =0; index<nodespluspos.length; index++){
-              if(nodespluspos[index].nodenumber == b[index1]){
-              var latLng1 = {lat: parseFloat(nodespluspos[index].pos.lat), lng: parseFloat(nodespluspos[index].pos.lng)};
-              lineoptions[index1] = latLng1;
-              break;
-              }
-
-        }
-    }
-    // get the total link delay
-    var totaldelay = 0;
-    for(index1 =0; index1<lineoptions.length-1; index1++){
-     var weight =  1609.34*2*(haversine_distance(lineoptions[index1],lineoptions[index1+1]))/(300000000);
-     totaldelay = totaldelay+weight;
-    }
-    document.getElementById('pathCost').innerHTML = "Simulation Total Link Delay (RTT): "+ parseFloat((totaldelay*1000).toFixed(4)) + "  Milliseconds";
-    console.log(lineoptions);
-    var arr = ["#008000","#0000A0","#33FF46","#4D3DC1","#A31CFB"];
-     var flightPath = new google.maps.Polyline({
-                path: lineoptions,
-                geodesic: true,
-                strokeColor:  arr[Math.floor(Math.random() * arr.length)],
-                strokeOpacity: 1.0,
-                strokeWeight: 1,
-                icons: [
-                {
-                  icon: lineSymbol,
-                  offset: "100%"
-                }
-          ]
-              });
-
-              flightPath.setMap(map);
-              animateCircle(flightPath);
-
-
-}
-
 
 class Node {
     constructor(asn_number, pos) {
         this.asn_number = asn_number;
         this.pos = pos;
     }
-}
+ }
 
 class Link {
     constructor(node1, node2) {
@@ -709,101 +268,6 @@ class Link {
         this.target = node2;
     }
 }
-
-function addgraphNodes(asnnodes,asnlinks){
-    console.log(asn_links);
-    console.log(asn_locations);
-    nodespluspos = [];
-    var graph = new WeightedGraph();
-    var index;
-    for(index =0; index<asnnodes.length; index++){
-       var nodepluspos = {nodenumber: asnnodes[index].ASN, pos:{lat: asnnodes[index].Latitude, lng:asnnodes[index].Longitude}}
-       nodespluspos[index] = nodepluspos;
-       graph.addVertex(asnnodes[index].ASN);
-     }
-    console.log(nodespluspos);
-    var index2;
-    for(index2=0; index2<asnlinks.length; index2++){
-     if(asnlinks[index2].Source !=null && asnlinks[index2].Target !=null){
-       var index3;
-       var sourcenodenumber = asnlinks[index2].Source;
-       var targetnodenumber = asnlinks[index2].Target;
-       var sourcelocation,targetlocation;
-       for(index3 = 0; index3<nodespluspos.length; index3++){
-         if(nodespluspos[index3].nodenumber == sourcenodenumber)
-         {
-            sourcelocation = nodespluspos[index3].pos;
-            //console.log(sourcenodenumber);
-         }
-
-         if(nodespluspos[index3].nodenumber == targetnodenumber)
-         {
-            targetlocation = nodespluspos[index3].pos;
-            //console.log(targetnodenumber);
-         }
-
-       }
-       if(checkNodenumber(nodespluspos,sourcenodenumber)&& checkNodenumber(nodespluspos,targetnodenumber)){
-              var weight =  1609.34*2*(haversine_distance(sourcelocation,targetlocation))/(300000000);
-              //console.log(sourcenodenumber); //console.log(targetnodenumber);
-              graph.addEdge(sourcenodenumber,targetnodenumber,weight);
-         }
-       }
-    }
-    return graph;
-
-}
-function checkNodenumber(nodescheck,nodenumber){
- var here = false;
- var index;
- for(index =0; index<nodescheck.length; index++){
-          if(nodescheck[index].nodenumber == nodenumber){
-          here = true;
-          break;
-          }
-
-    }
-    return here;
-
-}
-
-function haversine_distance(mk1, mk2) {
-    var d = 0;
-    if(mk1 !=null &&mk2 != null){
-      var R = 3958.8; // Radius of the Earth in miles
-      var rlat1 = mk1.lat * (Math.PI/180); // Convert degrees to radians
-      var rlat2 = mk2.lat * (Math.PI/180); // Convert degrees to radians
-      var difflat = rlat2-rlat1; // Radian difference (latitudes)
-      var difflon = (mk2.lng-mk1.lng) * (Math.PI/180); // Radian difference (longitudes)
-
-      d = 2 * R * Math.asin(Math.sqrt(Math.sin(difflat/2)*Math.sin(difflat/2)+Math.cos(rlat1)*Math.cos(rlat2)*Math.sin(difflon/2)*Math.sin(difflon/2)));
-      }
-      return d;
-    }
-
-function fav(){
-        console.log(addgraphNodes(asn_locations,asn_links));
-         var graph = new WeightedGraph();
-         //add nodes to the graph
-        graph.addVertex("A");
-        graph.addVertex("B");
-        graph.addVertex("C");
-        graph.addVertex("D");
-        graph.addVertex("E");
-        graph.addVertex("F");
-
-        graph.addEdge("A", "B", 4);
-        graph.addEdge("A", "C", 2);
-        graph.addEdge("B", "E", 3);
-        graph.addEdge("C", "D", 2);
-        graph.addEdge("C", "F", 4);
-        graph.addEdge("D", "E", 3);
-        graph.addEdge("D", "F", 1);
-        graph.addEdge("E", "F", 1);
-
-        console.log(graph.Dijkstra("D", "E"));
-}
-      //helper class for PriorityQueue
 class Nodez {
   constructor(val, priority) {
     this.val = val;
@@ -937,6 +401,562 @@ class WeightedGraph {
     return path.concat(smallest).reverse();
   }
 }
+
+draw(dataorig,datalinksrew);
+
+function draw(data,datalinks) {
+ initmap();
+ asn_locations = data;
+ asn_links = datalinks;
+  //console.log(datalinks);
+  //console.log(data);
+
+      var b;
+      for(b =0; b<data.length; b++){
+            var lat= data[b].Latitude;
+            var long= data[b].Longitude;
+            var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
+
+            nodes[b] = latLng;
+            var  asnnumber = data[b].ASN;
+            var node_new = null;
+            node_new = new Node (asnnumber,latLng);
+            nodes_red.push(node_new);
+            var marker = new google.maps.Marker({
+            position: latLng,
+            sName: data[b].ASN,
+            map: map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 2.5,
+                fillColor: "#F00",
+                fillOpacity: 0.4,
+                strokeWeight: 0.4
+            },
+         });
+         const infowindow = new google.maps.InfoWindow({
+          content: "<p>Marker Location:" + marker.getPosition() + "Asnnumber:" + asnnumber +"</p>"
+        });
+        marker.addListener("click", () => {
+          infowindow.open(map, marker);
+        });
+        infowindow.setPosition(latLng);
+
+       // console.log("Am here");
+      }
+      console.log(nodes);
+      console.log(datalinks);
+      var p; var n =0;
+      for(p=0; p<datalinks.length; p++){
+      var source; var target; var j;
+           for(j=0; j<nodes_red.length;j++){
+             console.log("nikooona");
+                if(datalinks[p].Source_ASN == nodes_red[j].asn_number){
+                  source = nodes_red[j].pos;
+                //  console.log(source)
+                }
+
+                    if(datalinks[p].Target_ASN == nodes_red[j].asn_number){
+                      target = nodes_red[j].pos;
+                    }
+
+           }
+
+          //console.log(source);
+           //console.log(target);
+           var newLink = new Link(source,target);
+           links[n] = newLink;
+
+            var flightPlanCoordinates = [
+                source,target
+              ];
+              var flightPath = new google.maps.Polyline({
+                path: flightPlanCoordinates,
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 1
+              });
+
+              flightPath.setMap(map);
+
+        n+=1;
+      }
+      console.log(links);
+        fav();
+
+  }
+
+
+  function redraw(nodesz, linksz){
+  console.log(linksz);
+  fav();
+   initmap();
+   var b;
+      for(b =0; b<nodesz.length; b++){
+            var lat= nodesz[b].pos.lat;
+            var long= nodesz[b].pos.lng;
+            var  asnnumber = nodesz[b].asn_number;
+            var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
+            var marker;
+            if(asnnumber.substring(0, 3) == "IXP"){
+
+                var letter = String.fromCharCode("X".charCodeAt(0));
+                var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+                marker = new google.maps.Marker({
+                position: latLng,
+                sName: newNode.ASN,
+                map: map,
+                icon: "http://maps.google.com/mapfiles/marker" + letter + ".png",
+                scale: 1.5
+                });
+            }
+            else{
+                    marker = new google.maps.Marker({
+                    position: latLng,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 2.5,
+                        fillColor: "#F00",
+                        fillOpacity: 0.4,
+                        strokeWeight: 0.4
+                    },
+                });
+        }
+         const infowindow = new google.maps.InfoWindow({
+          content: "<p>Marker Location:" + marker.getPosition() + "Asnnumber:" + asnnumber +"</p>"
+        });
+        marker.addListener("click", () => {
+
+          infowindow.open(map, marker);
+        });
+       // console.log("Am here");
+      }
+
+      var bc;
+      for(bc=0; bc<linksz.length; bc++){
+       var latLng1,latLng2;
+      if(linksz[bc].source != null && linksz[bc].target !=null){
+      latLng1 = {lat: parseFloat(linksz[bc].source.lat), lng: parseFloat(linksz[bc].source.lng)};
+      latLng2 = {lat: parseFloat(linksz[bc].target.lat), lng: parseFloat(linksz[bc].target.lng)};
+       }
+       else{
+       continue;
+       }
+       //console.log(latLng1);
+       //console.log(latLng2);
+       var flightPlanCoordinates = [
+                latLng1,latLng2
+              ];
+              var flightPath = new google.maps.Polyline({
+                path: flightPlanCoordinates,
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 1
+              });
+
+              flightPath.setMap(map);
+
+      }
+
+
+
+  }
+
+  function animateCircle(line) {
+    var count = 0;
+    window.setInterval(function() {
+      count = (count + 1) % 200;
+
+      var icons = line.get('icons');
+      icons[0].offset = (count / 2) + '%';
+      line.set('icons', icons);
+  }, 20);
+}
+
+
+
+function openFormAC() {
+    document.getElementById("myFormAC").style.display = "block";
+}
+
+function closeFormAC() {
+    document.getElementById("myFormAC").style.display = "none";
+}
+function openFormSim() {
+    document.getElementById("simulationForm").style.display = "block";
+}
+
+function closeFormSim() {
+    document.getElementById("simulationForm").style.display = "none";
+}
+function openFormAN() {
+    document.getElementById("myFormAN").style.display = "block";
+}
+
+function closeFormAN() {
+    document.getElementById("myFormAN").style.display = "none";
+}
+function openFormDC() {
+    document.getElementById("myFormDC").style.display = "block";
+}
+function closeFormDC() {
+    document.getElementById("myFormDC").style.display = "none";
+}
+
+function openFormDN() {
+    document.getElementById("myFormDN").style.display = "block";
+}
+function closeFormDN() {
+    document.getElementById("myFormDN").style.display = "none";
+}
+
+function addIXPNode() {
+    var lati = document.getElementById("LatName1").value;
+    var long = document.getElementById("LongT1").value;
+    console.log(lati)
+    console.log(long)
+    newNode = {
+        Name: "IXP",
+        Long: parseFloat(long),
+        Lat: parseFloat(lati)
+    }
+
+    //nodes.push(newnode);
+     var latLng = {lat: parseFloat(lati), lng: parseFloat(long)};
+     nodes.push(latLng);
+     var IXP = "IXP";
+     var b = IXP.concat(IXPnumber.toString());
+     var nodepluspos = {IP:"", ASN: b, Longitude: long, Latitude: lati};
+     asn_locations.push(nodepluspos);
+     var newnode = new Node(b, latLng);
+     nodes.push(latLng);
+     nodes_red.push(newnode);
+ <!--&lt;!&ndash;    //var letter = String.fromCharCode("X".charCodeAt(0));
+     // var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+<!--     // var marker = new google.maps.Marker({-->
+<!--            position: latLng,-->
+<!--            sName: newNode.ASN,-->
+<!--            map: map,-->
+<!--            icon: "http://maps.google.com/mapfiles/marker" + letter + ".png",-->
+<!--            scale: 1.5-->
+<!--        });&ndash;&gt;&ndash;&gt;-->
+      redraw(nodes_red,links);
+      closeFormAN();
+      IXPnumber = IXPnumber+1;
+      console.log(nodes);
+
+}
+
+function addConnection() {
+    var location1 = document.getElementById("Location1").value;
+    var location2 = document.getElementById("Location2").value;
+    console.log(location1);
+    console.log(location2);
+
+    var loc1 = location1.split(',');
+    var loc2 = location2.split(',');
+
+    var latLng1 = {lat: parseFloat(loc1[0]), lng: parseFloat(loc1[1])};
+    var latLng2 = {lat: parseFloat(loc2[0]), lng: parseFloat(loc2[1])};
+    console.log(findNode(loc1[0],loc1[1]));
+    console.log(findNode(loc2[0],loc2[1]));
+    if(findNode(loc1[0],loc1[1]) && findNode(loc2[0],loc2[1])){
+    var newlink = new Link(latLng1,latLng2);
+    links.push(newlink);
+    var sourcenodenumber = loc1[2];
+    var targetnodenumber = loc2[2];
+    var link = {Source_ASN: sourcenodenumber, Target_ASN: targetnodenumber}
+    asn_links.push(link);
+<!--     var flightPlanCoordinates = [-->
+<!--                latLng1,latLng2-->
+<!--              ];-->
+<!--              var flightPath = new google.maps.Polyline({-->
+<!--                path: flightPlanCoordinates,-->
+<!--                geodesic: true,-->
+<!--                strokeColor: '#008000',-->
+<!--                strokeOpacity: 1.0,-->
+<!--                strokeWeight: 1-->
+<!--              });-->
+
+<!--              flightPath.setMap(map);-->
+
+            redraw(nodes_red,links);
+       }
+
+       else {
+        alert("Connection not already added. Add the connection first to proceed.");
+       }
+
+}
+
+function findNode(lat,long){
+    for (let index = 0; index < nodes.length; index++) {
+     // console.log("Am in here300000000");
+        //console.log(nodes[index].id);//trace
+        //console.log(id.lat)
+        //console.log(nodes[index])
+        var values = Object.values(nodes[index]);
+        //console.log(values)
+        if(values[0] == lat && values[1] == long) {
+            return true;
+            break;
+        }
+    }
+    return false;
+}
+
+function deleteNode(){
+console.log(nodes);
+ var lati = document.getElementById("NodeLat1").value;
+ var long = document.getElementById("NodeLongT1").value;
+  if(findNode(lati,long)){
+    for (let index = 0; index < nodes.length; index++) {
+     // console.log("Am in here300000000");
+        //console.log(nodes[index].id);//trace
+        //console.log(id.lat)
+        //console.log(nodes[index])
+        var values = Object.values(nodes[index]);
+        //console.log(values)
+        if(values[0] == lati && values[1] == long) {
+            //console.log(index);
+           // delete nodes[index];
+            nodes.splice(index,1);
+            nodes_red.splice(index,1);
+            console.log(index);
+        }
+           var der;
+           for(der =0; der<links.length;der++){
+             // latLng1 = {lat: parseFloat(links[der].source.lat), lng: parseFloat(links[der].source.lng)};
+              //latLng2 = {lat: parseFloat(links[der].target.lat), lng: parseFloat(links[der].target.lng)};
+                if(links[der].source != null && links[der].target !=null){
+               if(lati == links[der].source.lat && long == links[der].source.lng || lati == links[der].target.lat && long == links[der].target.lng){
+               console.log(der);
+               links.splice(der,1);
+               for(var c=0;c<asn_locations.length;c++){
+                if(asn_locations[c].Latitude == lati && asn_locations[c].Longitude == long){
+                 asn_locations.splice(c,1);
+                }
+               }
+
+               }}
+           }
+
+
+    }
+     console.log(nodes_red);
+     console.log(links);
+     //Remove Links of the associated node.
+     redraw(nodes_red,links);
+     closeFormDN();
+
+  }
+  else {
+        alert("Nodes not already added. Add the nodes first to proceed.");
+        }
+
+}
+
+function deleteConnection(){
+   var location1 = document.getElementById("Loc1").value;
+    var location2 = document.getElementById("Loc2").value;
+    console.log(location1);
+    console.log(location2);
+
+    var loc1 = location1.split(',');
+    var loc2 = location2.split(',');
+
+    var latLng1 = {lat: parseFloat(loc1[0]), lng: parseFloat(loc1[1])};
+    var latLng2 = {lat: parseFloat(loc2[0]), lng: parseFloat(loc2[1])};
+    console.log(findNode(loc1[0],loc1[1]));
+    console.log(findNode(loc2[0],loc2[1]));
+    if(findNode(loc1[0],loc1[1]) && findNode(loc2[0],loc2[1])){
+        var index;
+        var tree;
+        for(index=0; index<links.length; index++){
+            if(links[index].source !=null && links[index].source.lat == loc1[0]){
+            console.log(links[index]);
+            }
+            if(links[index].source !=null && links[index].target !=null && links[index].source.lat == loc1[0] && links[index].source.lng ==loc1[1] && links[index].target.lat ==loc2[0] && links[index].target.lng ==loc2[1]
+            || links[index].source.lat == loc2[0] && links[index].source.lng ==loc2[1] && links[index].target.lat ==loc1[0] && links[index].target.lng ==loc1[1]){
+             console.log(index);
+             tree = index;
+             links.splice(index,1);
+             console.log("dopeunit");
+         }
+        }
+        links.splice(tree,1);
+        console.log(links);
+        console.log(asn_links);
+        redraw(nodes_red,links);
+    }
+
+    else {
+        alert("Connection not already added. Add the connection first to proceed.");
+       }
+
+
+
+}
+
+function simulationTraffic(){
+    var location1 = document.getElementById("sourceLocation").value;
+    var location2 = document.getElementById("destinationLocation").value;
+    var loc1 = location1.split(',');
+    var loc2 = location2.split(',');
+    var latLng1 = {lat: parseFloat(loc1[0]), lng: parseFloat(loc1[1])};
+    var latLng2 = {lat: parseFloat(loc2[0]), lng: parseFloat(loc2[1])};
+     const lineSymbol = {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          strokeColor: "#393"
+        };
+     var graph = addgraphNodes(asn_locations,asn_links);
+     var sourcenodenumber,targetnodenumber;
+     sourcenodenumber = loc1[2];
+     targetnodenumber = loc2[2];
+     var lineoptions = [];
+     console.log(graph);
+     var b = graph.Dijkstra(loc1[2],loc2[2]);
+     var index1,index;
+     document.getElementById('pathCost').innerHTML = 50
+     for(index1 =0; index1<b.length; index1++){
+         for(index =0; index<nodespluspos.length; index++){
+              if(nodespluspos[index].nodenumber == b[index1]){
+              var latLng1 = {lat: parseFloat(nodespluspos[index].pos.lat), lng: parseFloat(nodespluspos[index].pos.lng)};
+              lineoptions[index1] = latLng1;
+              break;
+              }
+
+        }
+    }
+    // get the total link delay
+    var totaldelay = 0;
+    for(index1 =0; index1<lineoptions.length-1; index1++){
+     var weight =  1609.34*2*(haversine_distance(lineoptions[index1],lineoptions[index1+1]))/(300000000);
+     totaldelay = totaldelay+weight;
+    }
+    document.getElementById('pathCost').innerHTML = "Simulation Total Link Delay (RTT): "+ parseFloat((totaldelay*1000).toFixed(4)) + "  Milliseconds";
+    console.log(lineoptions);
+    var arr = ["#008000","#0000A0","#33FF46","#4D3DC1","#A31CFB"];
+     var flightPath = new google.maps.Polyline({
+                path: lineoptions,
+                geodesic: true,
+                strokeColor:  arr[Math.floor(Math.random() * arr.length)],
+                strokeOpacity: 1.0,
+                strokeWeight: 1,
+                icons: [
+                {
+                  icon: lineSymbol,
+                  offset: "100%"
+                }
+          ]
+              });
+
+              flightPath.setMap(map);
+              animateCircle(flightPath);
+
+
+}
+
+
+function addgraphNodes(asnnodes,asnlinks){
+    console.log(asn_links);
+    console.log(asn_locations);
+    nodespluspos = [];
+    var graph = new WeightedGraph();
+    var index;
+    for(index =0; index<asnnodes.length; index++){
+       var nodepluspos = {nodenumber: asnnodes[index].ASN, pos:{lat: asnnodes[index].Latitude, lng:asnnodes[index].Longitude}}
+       nodespluspos[index] = nodepluspos;
+       graph.addVertex(asnnodes[index].ASN);
+     }
+    console.log(nodespluspos);
+    var index2;
+    for(index2=0; index2<asnlinks.length; index2++){
+     if(asnlinks[index2].Source_ASN !=null && asnlinks[index2].Target_ASN !=null){
+       var index3;
+       //console.log("AMHERERERER");
+       var sourcenodenumber = asnlinks[index2].Source_ASN;
+       var targetnodenumber = asnlinks[index2].Target_ASN;
+       var sourcelocation,targetlocation;
+       for(index3 = 0; index3<nodespluspos.length; index3++){
+         if(nodespluspos[index3].nodenumber == sourcenodenumber)
+         {
+            sourcelocation = nodespluspos[index3].pos;
+            //console.log(sourcenodenumber);
+         }
+
+         if(nodespluspos[index3].nodenumber == targetnodenumber)
+         {
+            targetlocation = nodespluspos[index3].pos;
+            //console.log(targetnodenumber);
+         }
+
+       }
+       if(checkNodenumber(nodespluspos,sourcenodenumber)&& checkNodenumber(nodespluspos,targetnodenumber)){
+              var weight =  1609.34*2*(haversine_distance(sourcelocation,targetlocation))/(300000000);
+              //console.log(sourcenodenumber); //console.log(targetnodenumber);
+              graph.addEdge(sourcenodenumber,targetnodenumber,weight);
+         }
+       }
+    }
+    return graph;
+
+}
+function checkNodenumber(nodescheck,nodenumber){
+ var here = false;
+ var index;
+ for(index =0; index<nodescheck.length; index++){
+          if(nodescheck[index].nodenumber == nodenumber){
+          here = true;
+          break;
+          }
+
+    }
+    return here;
+
+}
+
+function haversine_distance(mk1, mk2) {
+    var d = 0;
+    if(mk1 !=null &&mk2 != null){
+      var R = 3958.8; // Radius of the Earth in miles
+      var rlat1 = mk1.lat * (Math.PI/180); // Convert degrees to radians
+      var rlat2 = mk2.lat * (Math.PI/180); // Convert degrees to radians
+      var difflat = rlat2-rlat1; // Radian difference (latitudes)
+      var difflon = (mk2.lng-mk1.lng) * (Math.PI/180); // Radian difference (longitudes)
+
+      d = 2 * R * Math.asin(Math.sqrt(Math.sin(difflat/2)*Math.sin(difflat/2)+Math.cos(rlat1)*Math.cos(rlat2)*Math.sin(difflon/2)*Math.sin(difflon/2)));
+      }
+      return d;
+    }
+
+function fav(){
+        console.log(addgraphNodes(asn_locations,asn_links));
+         var graph = new WeightedGraph();
+         //add nodes to the graph
+        graph.addVertex("A");
+        graph.addVertex("B");
+        graph.addVertex("C");
+        graph.addVertex("D");
+        graph.addVertex("E");
+        graph.addVertex("F");
+
+        graph.addEdge("A", "B", 4);
+        graph.addEdge("A", "C", 2);
+        graph.addEdge("B", "E", 3);
+        graph.addEdge("C", "D", 2);
+        graph.addEdge("C", "F", 4);
+        graph.addEdge("D", "E", 3);
+        graph.addEdge("D", "F", 1);
+        graph.addEdge("E", "F", 1);
+
+        console.log(graph.Dijkstra("D", "E"));
+}
+      //helper class for PriorityQueue
 
 
     </script>
