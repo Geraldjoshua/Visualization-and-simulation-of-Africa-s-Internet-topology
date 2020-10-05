@@ -1,6 +1,7 @@
 # Visualization-and-simulation-of-Africa-s-Internet-topology
 
-A. Preamble
+**A. Preamble**
+
 This project involved building an online visualizer and simulator for Africa's Internet Topology.
 
 To visualize the the topology, internet measurements are taken from Speedchecker (https://www.speedchecker.com/probeapi/),
@@ -9,7 +10,7 @@ CAIDA (https://www.caida.org/home/), RIPE Atlas (https://www.ripe.net/).
 Traceroutes measurements are collected from the platforms. Remember that these internet measuring platforms uses active probing method of collecting
 internet measurements. After obtaining these traceroutes, they are stored in Mongo DB online (https://www.mongodb.com/)
 
-B. Code Sections:
+**B. Code Sections:**
 
    1. Templates is the folder that contains the HTML code that  make ups the web pages of the platform. 
  
