@@ -8,7 +8,9 @@ To visualize the the topology, internet measurements are taken from Speedchecker
 CAIDA (https://www.caida.org/home/), RIPE Atlas (https://www.ripe.net/). 
 
 Traceroutes measurements are collected from the platforms. Remember that these internet measuring platforms uses active probing method of collecting
-internet measurements. After obtaining these traceroutes, they are stored in Mongo DB online (https://www.mongodb.com/)
+internet measurements. After obtaining these traceroutes, they are stored in Mongo DB online (https://www.mongodb.com/) where they later are obtained
+and processed. The processing of the traceoutes involves modelling nodes and links from the traceroutes.
+Links and nodes are then used to map the internet topology **(Visualization)** which is later used for **Simulation** purposes.
 
 **B. Code Sections:**
 
