@@ -103,3 +103,9 @@ def ripesimulate():
     # data array contains 2 arrays [linksarray object, nodesarray object]
     data = mo.get_topology_data("RIPE")
     return render_template("/ripesimulate.html", error=False, data=data)
+
+@app.route("/userManual")
+def usermanual():
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+   # data = mo.get_topology_data("RIPE")
+    return render_template("/userManual.html", error=False)
