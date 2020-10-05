@@ -50,6 +50,8 @@ internet measurements. After obtaining these traceroutes, they are stored in Mon
   9. Clock.py is a python script used to start the automation process when the web app is deployed on heroku
  if you running it in development stage it is not going to be in use
 
+ 10. wsgi.py is the automation bundle for the whole web application.  
+ 
 * A live web application is still in development stage (mostly on maintenace) but can be found here: https://africa-s-internet-topology.herokuapp.com/
 
 * to **run** web app locally, outside the app folder from command line: run **python wsgi.py**
