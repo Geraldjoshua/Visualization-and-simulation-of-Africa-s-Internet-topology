@@ -89,3 +89,17 @@ def simulate():
     # data array contains 2 arrays [linksarray object, nodesarray object]
     data = mo.get_topology_data("SpeedChecker")
     return render_template("/simulate.html", error=False, data=data)
+
+
+@app.route("/Caidasimulate")
+def caidasimulate():
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("CAIDA")
+    return render_template("/caidasimulate.html", error=False, data=data)
+
+
+@app.route("/Ripesimulate")
+def ripesimulate():
+    # data array contains 2 arrays [linksarray object, nodesarray object]
+    data = mo.get_topology_data("RIPE")
+    return render_template("/ripesimulate.html", error=False, data=data)
