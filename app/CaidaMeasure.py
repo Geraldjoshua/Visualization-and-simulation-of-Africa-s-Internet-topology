@@ -3,7 +3,7 @@ import random
 
 import requests
 
-import MongoOperations as mo
+from app import MongoOperations as mo
 
 """
 get all active probes in Africa
@@ -94,10 +94,10 @@ def post_ping_all_ip_test(ip_Africa_Address):
 def get_trace_all_result():
     params = {'key': api_key}
     if len(trace_test_id) > 0:
-        mo.drop_mongo_collection()
+        mo.drop_mongo_collection("CAIDA")
     for id in trace_test_id:
         if id is not None:
-            params["id"] = id.strip()
+            params["id"] = str(id).strip()
             try:
                 r = requests.get(g_base_url + "/results", params=params, timeout=g_timeout)
             except requests.exceptions.RequestException as e:
@@ -114,7 +114,7 @@ def get_ping_all_result():
     params = {'key': api_key}
     for id in ping_test_id:
         if id is not None:
-            params["id"] = id
+            params["id"] = str(id).strip()
             try:
                 r = requests.get(g_base_url + "/results", params=params, timeout=g_timeout)
             except requests.exceptions.RequestException as e:
@@ -125,3 +125,4 @@ def get_ping_all_result():
                     for mon, v in result[k].items():
                         res = json.JSONDecoder().decode(v)
                         mo.upload_ping_to_mongo("CAIDA", res)
+

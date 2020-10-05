@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <!-- JQuery -->
+    <script crossorigin="anonymous"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <!-- Bootstrap core CSS -->
+    <link crossorigin="anonymous" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" rel="stylesheet">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="//maps.googleapis.com/maps/api/js?key=AIzaSyAdUAqT9PRkg6x1mswnL-USnLjpgqDLxaA&callback"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+      #svg1 {
+      width: 1100;
+      height: 600;
+      margin: 0;
+      padding: 0;
+      }
+      .stations, .stations svg {
+      position: absolute;
+      }
+      .stations line {
+      position: relative;
+      stroke: black;
+      stroke-width: 2px;
+      }
+      .links {
+      //width: 100%;
+      //height: 100%;
+      position: relative;
+      }
+      .stations circle {
+      fill: brown;
+      stroke: black;
+      stroke-width: 1.5px;
+      }
+      .stations svg {
+      width: 1000px;
+      height: 1500px;
+      padding-right: 100px;
+      font: 10px sans-serif;
+      }
+      #toggle {
+      position: absolute;
+      right: 15px; top: 15px;
+      z-index: 100;
+      }
+      .map path {
+      fill: #eee;
+      stroke: #fff;
+      stroke-width: 2;
+      }
+      .container-fluid {
+      overflow: hidden;
+      }
+      .links line {
+      stroke: red;
+      stroke-opacity: 0.25;
+      }
+      .nodes circle {
+      fill: #679;
+      stroke: #235;
+      stroke-width: 1.5;
+      }
+      div.tooltip {
+      color: #222;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow: 0px 0px 2px 0px #a6a6a6;
+      padding: .2em;
+      text-shadow: #f5f5f5 0 1px 0;
+      opacity: 0.9;
+      position: fixed;
+      }
+      .background {
+      fill: none;
+      pointer-events: all;
+      }
+      #states {
+      fill: #aaa;
+      }
+      #state-borders {
+      fill: none;
+      stroke: #000;
+      stroke-width: 1.5px;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      pointer-events: none;
+      }
+      #citySelection, #asnSelection {
+        display: none;
+      }
+      #infoBox{
+        position: absolute; 
+        top: 0px; 
+        width: 200px; 
+        height: 400px; 
+        margin-top: 60px;
+        margin-left: 10px;
+        padding: 15px;
+        background-color: white;
+        opacity: 0.85;
+        box-shadow: 0 0 5px 2px "#fff";
+        overflow: auto;
+        border: 2px solid black;
+      }
+      #clear{
+        visibility: hidden;
+        margin-left: 10px;
+        margin-right: 10px;
+      }
+      .alert{
+        display: none;
+        position: absolute; 
+        top: 0px;
+      }
+      #menu-routes, #view_pop, #simulation{
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+      .btn-default{ 
+        background-color: #6c757d;
+        color:#FFF;
+        border-color: #2F3E48;
+        margin-bottom: 5px;
+      }
+    </style>
+</head>
+<body>
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                <li class="nav-item active">
+                    <label for="platforms">Data from: Ripe Atlas</label>
+                    <div class="btn-group" id="platforms">
+                      <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Choose measuremnt platform
+                      </button>
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="speed">Speedchecker</a>
+                        <a class="dropdown-item" href="ripe">RIPE</a>
+                        <a class="dropdown-item" href="caida">CAIDA</a>
+                      </div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{{ url_for('ripesimulate') }}"><button class="btn btn-default btn-sm" id="menu-toggle">Simulation</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="menu-routes">View Routes</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="view_pop">View PoP</button></a>
+                        <a href=#><button class="btn btn-default btn-sm" id="clear">Clear</button></a>
+                    </div>
+                    <div display="inline" id="citySelection">
+                      <label for="citySelect">Select source city:</label>
+
+                      <select name="citySelect" id="citySelect">
+                        
+                      </select>
+                    </div>
+                    <div display="inline" id="asnSelection">
+                      <label for="asnSelect">Select source ASN:</label>
+
+                      <select name="asnSelect" id="asnSelect">
+                        <option value="" selected disabled hidden>ASN</option>
+                      </select>
+                    </div>
+
+
+                </li>
+            </ul>
+        </nav>
+  </div>
+    <div class="container-fluid" id="tooltip" style="position: relative;">
+        <div id="map" style="width:100%;height:700px;"></div>
+        <div class="alert alert-info alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                  Select City from dropdown or click on any node on the map.
+        </div>
+        <div id="infoBox">
+          <p id="text">Zoom in and click on an icon to display information.</p>
+        </div>
+    </div>
+    </div>
+    <!-- /#page-content-wrapper -->
+</div>
+<script>
+
+    // Create the Google Map…
+    var dat = {{data|tojson}}
+    var data = [];
+    var datalinks = [];
+    data = dat[1];
+    datalinks = dat[0];
+    city_data = dat[2]
+    var nodes = [];
+    var links = [];
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 3,
+        center: new google.maps.LatLng(34.5085, 8.7832),
+        //mapTypeId: google.maps.MapTypeId.TERRAIN
+        styles: [
+          {
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#f5f5f5"
+              }
+            ]
+          },
+          {
+            "elementType": "labels.icon",
+            "stylers": [
+              {
+                "visibility": "off"
+              }
+            ]
+          },
+          {
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#616161"
+              }
+            ]
+          },
+          {
+            "elementType": "labels.text.stroke",
+            "stylers": [
+              {
+                "color": "#f5f5f5"
+              }
+            ]
+          },
+          {
+            "featureType": "administrative.land_parcel",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#bdbdbd"
+              }
+            ]
+          },
+          {
+            "featureType": "poi",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#eeeeee"
+              }
+            ]
+          },
+          {
+            "featureType": "poi",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#757575"
+              }
+            ]
+          },
+          {
+            "featureType": "poi.park",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#e5e5e5"
+              }
+            ]
+          },
+          {
+            "featureType": "poi.park",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#9e9e9e"
+              }
+            ]
+          },
+          {
+            "featureType": "road",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#ffffff"
+              }
+            ]
+          },
+          {
+            "featureType": "road.arterial",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#757575"
+              }
+            ]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#dadada"
+              }
+            ]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#616161"
+              }
+            ]
+          },
+          {
+            "featureType": "road.local",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#9e9e9e"
+              }
+            ]
+          },
+          {
+            "featureType": "transit.line",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#e5e5e5"
+              }
+            ]
+          },
+          {
+            "featureType": "transit.station",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#eeeeee"
+              }
+            ]
+          },
+          {
+            "featureType": "water",
+            "elementType": "geometry",
+            "stylers": [
+              {
+                "color": "#c9c9c9"
+              }
+            ]
+          },
+          {
+            "featureType": "water",
+            "elementType": "labels.text.fill",
+            "stylers": [
+              {
+                "color": "#9e9e9e"
+              }
+            ]
+          }
+        ]
+    });
+
+    class Node {
+        asn_number;
+        paths;
+        constructor(asn_number, as_name, city, pos, paths) {
+            this.asn_number = asn_number;
+            this.as_name = as_name;
+            this.city = city;
+            this.pos = pos;
+            this.paths = paths;
+        }
+    }
+
+    class CityNode {
+      constructor(city, asn_list, pos){
+        this.city = city;
+        this.asn_list = asn_list;
+        this.pos = pos;
+      }
+    }
+
+    class Link {
+        constructor(node1, node2,time) {
+            this.source = node1;
+            this.target = node2;
+            this.rtt = time;
+        }
+    }
+
+    var k;
+
+    let pop_nodes = []; //Nodes Array
+    var city_nodes = [];
+    let city_markers = [];
+    let pop_markers = [];
+    let city_links = [];
+    let pop_links = [];
+    let viewed_sources = [];
+    let viewed_pops = [];
+    let infoWindows = [];
+    let asnInfoWindows = [];
+
+    window.onload = ready_city(city_data, datalinks);
+    function ready_city(city_data,datalinks) {
+        draw_pop(data, datalinks);
+        draw_city(city_data,datalinks);
+
+    }
+
+    function ready_pop(data,datalinks) {
+        draw_pop(data,datalinks);
+
+    }
+
+    function returnPopup(asn=null, city, latLng=null){
+      var contentString;
+      if(asn==null){
+        contentString = 
+          '<div><p>City:'+city+'</p></div>';
+      }else{
+        contentString = 
+        '<div><p>ASN:'+asn+' City:'+city+'</p></div>';
+      }
+      
+      if(latLng==null){
+        const infowindow = new google.maps.InfoWindow({
+          content: contentString,
+        });
+        return infowindow;
+      }else{
+        const infowindow = new google.maps.InfoWindow({
+          content: contentString,
+          position: latLng
+        });
+        return infowindow;
+      }
+      
+    }
+
+    function drawPaths(paths, nodeType){
+      var source; var destinaton; var line;
+      infoWindows.forEach(closeWindow);   //remove all info windows
+      infoWindows.length = 0;
+      for(var i=0; i<paths.length; i++){
+        source = searchNode(paths[i][0][0], paths[i][0][1], nodeType)[0];
+        for(var j=1; j<paths[i].length; j++){
+          //search for the particular node in the path in the data array
+          var res = searchNode(paths[i][j][0], paths[i][j][1], nodeType);   //returns a [latlng, node index] array
+          destinaton = res[0];
+          var info_wind = returnPopup(paths[i][j][0], paths[i][j][1]);
+          if(nodeType=="City"){
+            info_wind.open(map, city_markers[res[1]]);
+          }else{
+            info_wind.open(map, pop_markers[res[1]]);
+          }
+          infoWindows.push(info_wind);    //for clearing of info windows later on
+          var flightPlanCoordinates = [source,destinaton];
+          line = makePolyline(flightPlanCoordinates, "#3a00cc", map);
+          //line.setMap(map);
+          viewed_sources.push(line);   //for clearing of paths when view routes is exited
+          source = destinaton; //exchange source and destination 
+        }
+      }
+    }
+
+    function searchNode(asn, city, nodeType){
+      if(nodeType=="City"){
+        for(var i=0; i<city_data.length; i++){
+          //search for the particular city node in the path in the data array
+          if(city==city_data[i]['City']){
+            //do a sneaky thing and change the marker icon in here too
+            city_markers[i].setIcon(null);
+            return [{lat: parseFloat(city_data[i]['Latitude']), lng: parseFloat(city_data[i]['Longitude'])}, i];    //return [latlng, index i]
+          }
+        }
+      }else{
+        for(var i=0; i<data.length; i++){
+          //search for the particular city node in the path in the data array
+          if(asn==parseInt(data[i]['ASN']) && city==data[i]['City']){
+            return [{lat: parseFloat(data[i]['Latitude']), lng: parseFloat(data[i]['Longitude'])}, i];
+          }
+        }
+      }
+    }
+
+    function changeInfoBox(asnList, city){
+      var infoBox = document.getElementById("infoBox");
+      var text = document.getElementById("text");
+      text.innerHTML = null;    //clear it first of any previous text
+      var textString = "<p>"+city+" has the following Autonomous Systems: </p>"
+                        "<br></br>"+
+                        "<ul>";
+      for(var i=0; i<asnList.length; i++){
+        textString+="<li>"+asnList[i]+"</li>";
+      }
+      textString+="</ul>";   
+      text.innerHTML = textString;
+      infoBox.append(text);
+    }
+
+    var infowindow = new google.maps.InfoWindow({
+    });
+
+    
+
+    function updateInfoWindow(text, position){
+      infowindow.setContent(text);
+      infowindow.setPosition(position);
+    }
+
+    function makeMarker(position, asnList, city, color, isSource, paths=null, map=null){ 
+      icon = {
+            path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+            scale: 4,
+            fillColor: color,
+            fillOpacity: 0.7,
+            strokeWeight: 0.6
+        }
+      var marker = new google.maps.Marker({
+          position: position,
+          sName: city,
+          map: map,
+          icon: icon,
+      });
+      marker.addListener("click", () => {
+        // info_wind = returnPopup(asn, city);
+        // info_wind.open(map, marker);
+        text = "<div><p>City "+city.toString()+"</p></div>";
+        changeInfoBox(asnList, city);
+        updateInfoWindow("City: "+city , position);
+
+        if(inViewRoutes){
+          document.getElementById('asnSelect').innerText = null;
+          document.getElementById("asnSelection").style.display = "inline";
+          selected_city = city;
+          asnDropdown(selected_city);
+        }
+      });       
+      return marker;
+      //markers.push(marker);
+    }
+
+    function makePOPmarker(position, asn, map=null){
+      icon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: "#3a00cc",
+            fillOpacity: 0.4,
+            strokeWeight: 0.6
+      }
+
+      var marker = new google.maps.Marker({
+          position: position,
+          sName: asn,
+          //color: "#F00",
+          //icon: 'C:/Users/tshit/Documents/Blessed/Honours Courses/Honors Project',
+          icon: icon,
+          map: map,
+          label: {
+              color: '#000000',
+              fontWeight: 'bold',
+              text: asn,
+              fontSize: '15px',
+          },
+      });
+      // var infowindow = new google.maps.InfoWindow({
+      //   content: asn,
+      // });
+      // asnInfoWindows.push(infowindow);
+      return marker;
+    }
+
+    function makePolyline(flightPlanCoordinates, color, map=null){
+      var flightPath = new google.maps.Polyline({
+        path: flightPlanCoordinates,
+        geodesic: true,
+        strokeColor: color,
+        strokeOpacity: 1.0,
+        strokeWeight: 1
+      });
+      //links.push(flightPath);
+      flightPath.setMap(map);
+      return flightPath;
+    }
+
+    function draw_pop(data,datalinks) {
+          var b;
+          //data = nodes, datalinks = links
+          for(b =0; b<data.length; b++){
+                var lat= data[b].Latitude;
+                var long= data[b].Longitude;
+                var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
+                nodes[b] = latLng;
+                var  asnnumber = data[b].ASN;
+                var as_name = data[b].AS_Name;
+                var city = data[b].City;
+                city = city.replace('\n', '')
+                var paths = data[b].Paths;
+                var newnode = new Node(asnnumber, as_name, city, latLng, paths);
+                pop_nodes.push(newnode);
+                marker = makePOPmarker(latLng, data[b].ASN);    //makes marker with map==null so it does not show
+                pop_markers.push(marker);
+          }
+          var p;
+          var num_links = 0;
+          for(p=0; p<datalinks.length; p++){
+               var source;
+               var target;
+               var j;
+
+               for(j=0; j<pop_nodes.length;j++){
+                    if(datalinks[p].Source_ASN == pop_nodes[j].asn_number && datalinks[p].Source_City == pop_nodes[j].city){
+                      //console.log("here now");
+                      source = pop_nodes[j].pos;
+                    }
+
+                    if(datalinks[p].Target_ASN == pop_nodes[j].asn_number && datalinks[p].Target_City == pop_nodes[j].city){
+                      target = pop_nodes[j].pos;
+                    }
+               }
+
+              var flightPlanCoordinates = [
+                  source,target
+                ];
+              var new_link = new Link(source, target);
+              linkLine = makePolyline(flightPlanCoordinates, '#3a00cc');
+              pop_links.push(linkLine);
+              num_links = num_links+1;
+          }
+          //console.log(num_links);
+    }
+
+    //function to draw City level nodes
+    function draw_city(data, datalinks){
+      var b;
+          //data = nodes, datalinks = links
+          for(b =0; b<data.length; b++){
+                var lat= data[b].Latitude;
+                var long= data[b].Longitude;
+                var latLng = {lat: parseFloat(lat), lng: parseFloat(long)};
+                nodes[b] = latLng;
+                var city = data[b].City;
+                city = city.replace('\n', '')
+                //get the asn list for the node
+                var asn_list = [];
+                for(var i=0; i<pop_nodes.length; i++){
+                  if(city==pop_nodes[i].city){
+                    //asn_list.push(pop_nodes[i].as_name+" ("+pop_nodes[i].asn_number+")");
+                    asn_list.push([pop_nodes[i].as_name, pop_nodes[i].asn_number]);
+                  }
+                }
+                var newnode = new CityNode(city, asn_list, latLng);
+                city_nodes.push(newnode);
+                marker = makeMarker(latLng, asn_list, city, "#3a00cc", false, null, map); 
+                city_markers.push(marker);
+          }
+          var p;
+          var num_links = 0;
+          for(p=0; p<datalinks.length; p++){
+               var source;
+               var target;
+               var j;
+
+               for(j=0; j<city_nodes.length;j++){
+                    if( datalinks[p].Source_City == city_nodes[j].city){
+                      //console.log("here now");
+                      source = city_nodes[j].pos;
+                    }
+
+                    if(datalinks[p].Target_City == city_nodes[j].city){
+                      target = city_nodes[j].pos;
+                    }
+
+               }
+
+                var flightPlanCoordinates = [
+                    source,target
+                  ];
+                var new_link = new Link(source, target);
+                linkLine = makePolyline(flightPlanCoordinates, '#3a00cc', map);
+                //linkLine.setMap(map);
+                city_links.push(linkLine);
+                num_links = num_links+1;
+          }
+          console.log(num_links);
+    }
+
+    // Sets the map on all markers in the array.
+    function setMapOnAll(map=null, nodeType) {
+      if(nodeType=="City"){
+        for (let i = 0; i < city_markers.length; i++) {
+          city_markers[i].setMap(map);
+        }
+      }else{
+        for (let i = 0; i < pop_markers.length; i++) {
+          pop_markers[i].setMap(map);
+        }
+      }
+    }
+
+    // Sets the map on all links in the array.
+    function setMapOnLinks(map=null, nodeType, links_list) {
+      for (let i = 0; i < links_list.length; i++) {
+          links_list[i].setMap(map);
+      }
+    }
+
+    // Removes the markers from the map, but keeps them in the array.
+    function clearMarkers(nodeType) {
+      setMapOnAll(null, nodeType);
+    }
+
+    // Removes the links from the map, but keeps them in the array.
+    function clearLinks(nodeType, links_list) {
+      setMapOnLinks(null, nodeType, links_list);
+    }
+
+    //listener for zoom event changes
+    var previousZoom = map.getZoom();
+    map.addListener('zoom_changed', function() {
+      //infowindow.setContent('Zoom: ' + map.getZoom());
+      if(!inViewRoutes && !inViewPOP){    //only re-render when view routes or view pop mode is off
+        if(map.getZoom()>=7){   //zoomed in
+          clearMarkers("City");
+          clearLinks("City", city_links);
+          setMapOnAll(map, "POP");
+          setMapOnLinks(map, "POP", pop_links);
+          // if(previousZoom-map.getZoom()<0){
+          //   map.setZoom(9);   //if you zoom in above level 7, automatically zoom you into level 9 since thats where city names appear
+          // }
+          //load the PoP level map  
+        } else{
+          clearMarkers("POP");
+          clearLinks("POP", pop_links);
+          setMapOnAll(map, "City");
+          setMapOnLinks(map, "City", city_links);
+        }
+        previousZoom=map.getZoom();
+      }   
+    });
+
+    function animateCircle(line) {
+        var count = 0;
+        window.setInterval(function() {
+          count = (count + 1) % 200;
+          var icons = line.get('icons');
+          icons[0].offset = (count / 2) + '%';
+          line.set('icons', icons);
+        }, 20);
+    }
+
+    //button listeners
+    document.getElementById("menu-routes").addEventListener("click", viewRoutes);
+    document.getElementById("view_pop").addEventListener("click", viewPOP);
+    document.getElementById("clear").addEventListener("click", clear);
+
+    //create the dropdown for the cities with source ASN's
+    var cityLinksCleared = false;
+    //set the dropdown list options as all the cities available
+    for(var i=0; i<data.length; i++){
+      if(data[i]['Paths'].length>0){
+        var city = data[i]['City'];
+        var option = document.createElement("option");
+        option.text = city;
+        document.getElementById("citySelect").add(option);
+      }
+    }
+
+    //respond to changes in the city select drop down by creating the ASN dropdown
+    var asn; var selected_city; var sourceMarker;
+    document.getElementById("citySelect").addEventListener("change", ()=>{
+      x = document.getElementById("citySelect");
+      document.getElementById('asnSelect').innerText = null;
+      document.getElementById("asnSelection").style.display = "inline";
+      //get all asns that are in that city and add them to the ASN dropdown
+      selected_city = x.value;
+      sourceMarker = changeMarker(selected_city);   //change the marker of the source city
+      asnDropdown(selected_city);
+    })
+
+    //function to populate the asn select with options
+    function asnDropdown(city){
+      var option  = document.createElement("option");   //create the default option in the dropdown
+      option.text = "ASN";
+      option.setAttribute("selected", "selected");
+      document.getElementById("asnSelect").add(option);
+      for(var i=0; i<data.length; i++){
+        if(city==data[i]['City'] && data[i]['Paths'].length>0){
+          asn = data[i]['ASN'];
+          option = document.createElement("option");
+          option.text = asn;
+          document.getElementById("asnSelect").add(option);
+        }
+      }
+    }
+
+    //function to draw paths or view pop when asn is selected
+    function asnSelected(city){
+      x = document.getElementById("asnSelect");
+      if(inViewRoutes){
+        info_wind = returnPopup(x.value, city);
+        info_wind.open(map, sourceMarker);
+        infoWindows.push(info_wind);
+        //look for the specific node with that asn and city
+        for(var i=0; i<pop_nodes.length; i++){
+          if(pop_nodes[i].city==city && pop_nodes[i].asn_number==x.value){
+            //viewed_sources.push(i);
+            drawPaths(pop_nodes[i].paths, "City");
+          }
+        }
+      }else if(inViewPOP){
+        //look for all the nodes with that asn
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;
+        for(var i=0; i<city_nodes.length; i++){
+          for(var j=0; j<city_nodes[i].asn_list.length; j++){
+            if(x.value==city_nodes[i].asn_list[j][1]){
+              city_markers[i].setIcon(null);
+              viewed_pops.push(city_markers[i]);
+              var info_wind = returnPopup(x.value, city_nodes[i].city);
+              info_wind.open(map, city_markers[i]);
+              infoWindows.push(info_wind);
+            }
+          }
+        }
+      }
+    }
+
+    //respond to changes in the asn select drop down by drawing the paths
+    document.getElementById("asnSelect").addEventListener("change", ()=>{
+      asnSelected(selected_city);
+    })
+
+    //respond to the view routes button being toggled
+    var inViewRoutes = false;
+    function viewRoutes() {
+      var dropdown = document.getElementById("citySelection");
+      var clear = document.getElementById("clear");
+      if(cityLinksCleared==false){
+        map.setZoom(4);
+        clearLinks("City", city_links);
+        document.getElementById("menu-routes").innerHTML = "Exit View Routes";
+        dropdown.style.display = "inline";
+        clear.style.visibility = "visible";    //put the clear button
+        cityLinksCleared = true;
+        inViewRoutes = true;
+        document.getElementById("view_pop").disabled = true;    //disable the view pop button
+        $('.alert').show();
+      }else{
+        map.setZoom(4);   //restore zoom level to default 4
+        previousZoom=4;
+        setMapOnLinks(map, "City", city_links);   //load city level nodes
+        document.getElementById("menu-routes").innerHTML = "View Routes";
+        dropdown.style.display = "none";
+        clear.style.visibility = "hidden";    //remove the clear button
+        document.getElementById("asnSelection").style.display = "none";
+        document.getElementById("view_pop").disabled = false;    //enable the view pop button
+        cityLinksCleared = false;
+        inViewRoutes = false;
+        city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+        clearLinks("City", viewed_sources);
+        viewed_sources.length = 0;
+      } 
+    }
+
+    //respond to the view pop button being toggled
+    var inViewPOP = false;
+    function viewPOP() {
+      var dropdown = document.getElementById("asnSelection");
+      var clear = document.getElementById("clear");
+      if(inViewPOP==false){
+        map.setZoom(3);
+        document.getElementById("view_pop").innerHTML = "Exit View PoP";
+        document.getElementById("menu-routes").disabled = true;    //disable the view routes button
+        dropdown.style.display = "inline";
+        clear.style.visibility = "visible";    //put the clear button
+        inViewPOP = true;
+        //populate the dropdown with asn
+        for(var i=0; i<data.length; i++){
+          var asn = data[i]['ASN'];
+          var option = document.createElement("option");
+          option.text = asn;
+          document.getElementById("asnSelect").add(option);
+        }
+      }else{
+        map.setZoom(4);   //restore zoom level to default 4
+        document.getElementById("view_pop").innerHTML = "View PoP";
+        document.getElementById("menu-routes").disabled = false;    //enable the view pop button
+        dropdown.style.display = "none";
+        clear.style.visibility = "hidden";    //put the clear button
+        viewed_pops.forEach(resetMarker);    //reset all changed markers to blue circles
+        document.getElementById("asnSelection").style.display = "none";
+        inViewPOP = false;
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+      } 
+    }
+
+    //clear button listener
+    function clear(){
+      //if in view routes then only clear info windows and routes
+      if(inViewRoutes){
+        map.setZoom(4);
+        city_markers.forEach(resetMarker);    //reset all changed markers to blue circles
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+        clearLinks("City", viewed_sources);
+        viewed_sources.length = 0;
+      }else if(inViewPOP){    //reset all markers to original and remove info windows
+        viewed_pops.forEach(resetMarker);
+        infoWindows.forEach(closeWindow);   //remove all info windows
+        infoWindows.length = 0;   //clear the infoWindows
+      }
+    }
+
+    //function to change the icon for a city node marker to default google reverse teardrop marker
+    function changeMarker(city){
+      for(var i=0; i<city_data.length; i++){
+        if(city==city_data[i]['City']){
+          //change the corresponding marker's icon
+          city_markers[i].setIcon(null);
+          map.setCenter(city_markers[i].getPosition());
+          return city_markers[i];
+        }
+      }
+    }
+
+    //function to change icon for city node marker to the blue down pointing arrow
+    function resetMarker(marker){
+      const icon = {
+          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+          scale: 4,
+          fillColor: "#3a00cc",
+          fillOpacity: 0.7,
+          strokeWeight: 0.6
+      }
+      marker.setIcon(icon);
+    }
+
+    //function to close an info window
+    function closeWindow(infowindow){
+      infowindow.close();
+    }
+
+
+</script>
+</body>

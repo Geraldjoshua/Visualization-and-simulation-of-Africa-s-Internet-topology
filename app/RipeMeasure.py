@@ -8,7 +8,7 @@ from ripe.atlas.cousteau import (
     AtlasResultsRequest
 )
 
-import MongoOperations as mo
+from app import MongoOperations as mo
 
 "note: use pygal to visualize data"
 
@@ -102,7 +102,12 @@ def post_trace_all_ip_test(ip_Africa_address):
         )
         (is_success, response) = atlas_request.create()
         if is_success:
-            result_id.append(response['measurements'])
+            for pid in response['measurements']:
+                result_id.append(pid)
+            #result_id.append(response['measurements'])
+
+    # for item in result_id:
+    #     print(item)
 
     trace_test_id = result_id
 
@@ -121,13 +126,16 @@ def get_ping_all_result():
 
 def get_trace_all_result():
     if len(trace_test_id) > 0:
-        mo.drop_mongo_collection()
-    for pid in trace_test_id:
+        mo.drop_mongo_collection("RIPE")
+    file = open("id.txt",'r')
+    pp = file.readlines()
+    for pid in pp:
         if pid is not None:
             kwargs = {
-                "msm_id": int(pid),
+                "msm_id": str(pid).strip(),
             }
             is_success, results = AtlasResultsRequest(**kwargs).create()
             if is_success:
                 for a in results:
                     mo.upload_to_mongo("RIPE", a)
+

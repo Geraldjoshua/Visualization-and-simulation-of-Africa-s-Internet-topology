@@ -9,7 +9,7 @@ from ripe.atlas.cousteau import AtlasResultsRequest
 
 
 def test_get_speed_trace_result_check_status_code_equals_200():
-    ApiKey = "7295deda-f359-4ac9-918f-93fdc01992a8"
+    ApiKey = ""
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
     testID = ""
     url = API_ENDPOINT + "GetTracertResults?apikey=" + ApiKey + "&testID=" + testID
@@ -25,7 +25,7 @@ def test_get_speed_trace_result_check_status_code_equals_200():
 
 
 def test_get_speed_ping_result_check_status_code_equals_200():
-    ApiKey = "7295deda-f359-4ac9-918f-93fdc01992a8"
+    ApiKey = ""
     API_ENDPOINT = "https://kong.speedcheckerapi.com:8443/ProbeAPIv2/"
     testID = ""
     url = API_ENDPOINT + "GetPingResults?apikey=" + ApiKey + "&testID=" + testID
@@ -68,7 +68,7 @@ def test_get_ripe_trace_and_ping_result_check_status_is_success():
 
 
 def test_get_caida_trace_result_check_status_code_equals_200():
-    api_key = "ef6c77cf438ca8353f5a266498f4785b"
+    api_key = ""
     g_base_url = "https://vela.caida.org/api"
     g_timeout = 120  # default timeout
     id = ""
@@ -78,7 +78,7 @@ def test_get_caida_trace_result_check_status_code_equals_200():
 
 
 def test_get_caida_ping_result_check_status_code_equals_200():
-    api_key = "ef6c77cf438ca8353f5a266498f4785b"
+    api_key = ""
     g_base_url = "https://vela.caida.org/api"
     g_timeout = 120  # default timeout
     id = ""
