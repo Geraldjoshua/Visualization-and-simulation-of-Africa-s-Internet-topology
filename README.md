@@ -12,6 +12,8 @@ internet measurements. After obtaining these traceroutes, they are stored in Mon
 and processed. The processing of the traceoutes involves modelling nodes and links from the traceroutes.
 Links and nodes are then used to map the internet topology **(Visualization)** which is later used for **Simulation** purposes.
 
+* A live web application is still in development stage (mostly on maintenace) but can be found here: https://africa-s-internet-topology.herokuapp.com/
+
 **B. Code Sections:**
 
    1. Templates is the folder that contains the HTML code that  make ups the web pages of the platform. 
