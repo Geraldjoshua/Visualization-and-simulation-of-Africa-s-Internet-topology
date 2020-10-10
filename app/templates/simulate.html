@@ -233,9 +233,10 @@
 
    //Node class to hold the node information as the class diagram
       class Node {
-          constructor(asn_number, pos) {
+          constructor(asn_number, pos, city) {
               this.asn_number = asn_number;
               this.pos = pos;
+              this.city = city;
           }
       }
 
@@ -410,9 +411,10 @@
 
               nodes[b] = latLng;
               var asnnumber = data[b].ASN;
+              var city = data[b].City;
               var node_new = null;
               //instantiate a new node
-              node_new = new Node(asnnumber, latLng);
+              node_new = new Node(asnnumber, latLng, city);
               //Add the node to the array
               nodes_red.push(node_new);
               var marker = new google.maps.Marker({
@@ -450,12 +452,12 @@
               var j;
               for (j = 0; j < nodes_red.length; j++) {
                   console.log("nikooona");
-                  if (datalinks[p].Source_ASN == nodes_red[j].asn_number) {
+                  if (datalinks[p].Source_ASN == nodes_red[j].asn_number && datalinks[p].Source_City == nodes_red[j].city) {
                       source = nodes_red[j].pos;
                       //  console.log(source)
                   }
 
-                  if (datalinks[p].Target_ASN == nodes_red[j].asn_number) {
+                  if (datalinks[p].Target_ASN == nodes_red[j].asn_number && datalinks[p].Target_City == nodes_red[j].city) {
                       target = nodes_red[j].pos;
                   }
 
