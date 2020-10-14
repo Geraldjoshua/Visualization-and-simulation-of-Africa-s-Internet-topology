@@ -92,6 +92,12 @@
       stroke-linecap: round;
       pointer-events: none;
       }
+      .btn-default{ 
+        background-color: #6c757d;
+        color:#FFF;
+        border-color: #2F3E48;
+        margin-bottom: 5px;
+      }
     </style>
 </head>
 <body>
@@ -183,16 +189,16 @@
         <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
             <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                 <li class="nav-item active">
-                    <button class="btn btn-primary" id="menu-toggle1">Toggle Menu</button>
-                    <button class="btn btn-primary" id="menu-toggle" onclick="openFormSim()">Simulation</button>
-                    <a href="{{ url_for('index') }}"> <button class="btn btn-secondary" id="clear-graph">Switch to Visualization</button> </a>
-                    <a href="{{ url_for('usermanual') }}" > <button class="btn btn-secondary" id="clear-grap">User Manual</button> </a>
+                    <button class="btn btn-default btn-sm" id="menu-toggle1">Toggle Menu</button>
+                    <button class="btn btn-default btn-sm" id="menu-toggle" onclick="openFormSim()">Simulation</button>
+                    <a href="{{ url_for('index') }}"> <button class="btn btn-default btn-sm" id="clear-graph">Switch to Visualization</button> </a>
+                    <a href="{{ url_for('usermanual') }}" > <button class="btn btn-default btn-sm" id="clear-grap">User Manual</button> </a>
 
                 </li>
             </ul>
         </nav>
         <div class="container-fluid" id="tooltip">
-            <div id="map" style="width:100%;height:500px;"></div>
+            <div id="map" style="width:100%;height:700px;"></div>
         </div>
     </div>
     <!-- /#page-content-wrapper -->
@@ -233,9 +239,10 @@
 
    //Node class to hold the node information as the class diagram
       class Node {
-          constructor(asn_number, pos) {
+          constructor(asn_number, pos, city) {
               this.asn_number = asn_number;
               this.pos = pos;
+              this.city = city;
           }
       }
 
@@ -410,9 +417,10 @@
 
               nodes[b] = latLng;
               var asnnumber = data[b].ASN;
+              var city = data[b].City;
               var node_new = null;
               //instantiate a new node
-              node_new = new Node(asnnumber, latLng);
+              node_new = new Node(asnnumber, latLng, city);
               //Add the node to the array
               nodes_red.push(node_new);
               var marker = new google.maps.Marker({
@@ -420,11 +428,11 @@
                   sName: data[b].ASN,
                   map: map,
                   icon: {
-                      path: google.maps.SymbolPath.CIRCLE,
-                      scale: 2.5,
-                      fillColor: "#F00",
-                      fillOpacity: 0.4,
-                      strokeWeight: 0.4
+                      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                      scale: 4,
+                      fillColor: "#3a00cc",
+                      fillOpacity: 0.7,
+                      strokeWeight: 0.6
                   },
               });
               //create a information window.
@@ -450,12 +458,12 @@
               var j;
               for (j = 0; j < nodes_red.length; j++) {
                   console.log("nikooona");
-                  if (datalinks[p].Source_ASN == nodes_red[j].asn_number) {
+                  if (datalinks[p].Source_ASN == nodes_red[j].asn_number && datalinks[p].Source_City == nodes_red[j].city) {
                       source = nodes_red[j].pos;
                       //  console.log(source)
                   }
 
-                  if (datalinks[p].Target_ASN == nodes_red[j].asn_number) {
+                  if (datalinks[p].Target_ASN == nodes_red[j].asn_number && datalinks[p].Target_City == nodes_red[j].city) {
                       target = nodes_red[j].pos;
                   }
 
@@ -473,7 +481,7 @@
               var flightPath = new google.maps.Polyline({
                   path: flightPlanCoordinates,
                   geodesic: true,
-                  strokeColor: '#FF0000',
+                  strokeColor: "#3a00cc",
                   strokeOpacity: 1.0,
                   strokeWeight: 1
               });
@@ -519,11 +527,11 @@
                       position: latLng,
                       map: map,
                       icon: {
-                          path: google.maps.SymbolPath.CIRCLE,
-                          scale: 2.5,
-                          fillColor: "#F00",
-                          fillOpacity: 0.4,
-                          strokeWeight: 0.4
+                          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                          scale: 4,
+                          fillColor: "#3a00cc",
+                          fillOpacity: 0.7,
+                          strokeWeight: 0.6
                       },
                   });
               }
@@ -560,7 +568,7 @@
               var flightPath = new google.maps.Polyline({
                   path: flightPlanCoordinates,
                   geodesic: true,
-                  strokeColor: '#FF0000',
+                  strokeColor: "#3a00cc",
                   strokeOpacity: 1.0,
                   strokeWeight: 1
               });
